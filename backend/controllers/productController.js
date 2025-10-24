@@ -1,26 +1,26 @@
-import {v2 as cloudinary} from 'cloudinary';
+import { v2 as cloudinary } from 'cloudinary';
 import productModel from '../models/productModel.js';
 
 //function for add product
-const addProduct = async(req,res)=>{
+const addProduct = async (req, res) => {
     try {
-        const {name,description,price,category,subCategory,sizes,bestseller} = req.body;
+        const { name, description, price, category, subCategory, sizes, bestseller } = req.body;
 
-        const image1 =req.files.image1 && req.files.image1[0];
-        const image2 =req.files.image2 && req.files.image2[0];
-        const image3 =req.files.image3 && req.files.image3[0];
-        const image4 =req.files.image4 && req.files.image4[0];
+        const image1 = req.files.image1 && req.files.image1[0];
+        const image2 = req.files.image2 && req.files.image2[0];
+        const image3 = req.files.image3 && req.files.image3[0];
+        const image4 = req.files.image4 && req.files.image4[0];
 
-        const images =[image1,image2,image3,image4].filter((item)=> item !== undefined);
+        const images = [image1, image2, image3, image4].filter((item) => item !== undefined);
 
         let imagesUrl = await Promise.all(
-            images.map(async (image)=>{
-                let result = await cloudinary.uploader.upload(image.path,{resource_type:'image'});
+            images.map(async (image) => {
+                let result = await cloudinary.uploader.upload(image.path, { resource_type: 'image' });
                 return result.secure_url;
             })
         )
-        
-        const productData ={
+
+        const productData = {
             name,
             description,
             category,
@@ -28,61 +28,114 @@ const addProduct = async(req,res)=>{
             subCategory,
             bestseller: bestseller === 'true' ? true : false,
             sizes: JSON.parse(sizes),
-            image:imagesUrl,
-            date:Date.now(),
+            image: imagesUrl,
+            date: Date.now(),
         }
         console.log(productData);
 
         const product = new productModel(productData);
         await product.save();
-        
 
-        res.json({success:true,message:"Thêm sản phẩm thành công"});
-        
+
+        res.json({ success: true, message: "Thêm sản phẩm thành công" });
+
     } catch (error) {
         console.log(error);
-        res.json({success:false,message:error.message});
+        res.json({ success: false, message: error.message });
     }
 }
 
 //function for list product
-const listProduct = async(req,res)=>{
+const listProduct = async (req, res) => {
     try {
-        
+
         const products = await productModel.find({});
-        res.json({success:true,products});
+        res.json({ success: true, products });
 
     } catch (error) {
         console.log(error);
-        res.json({success:false,message:error.message});
+        res.json({ success: false, message: error.message });
     }
 }
 
 //function for remove product
-const removeProduct = async(req,res)=>{
+const removeProduct = async (req, res) => {
     try {
-        
+
         await productModel.findByIdAndDelete(req.body.id);
-        res.json({success:true,message:"Xóa sản phẩm thành công"});
+        res.json({ success: true, message: "Xóa sản phẩm thành công" });
 
     } catch (error) {
         console.log(error);
-        res.json({success:false,message:error.message});
+        res.json({ success: false, message: error.message });
+    }
+}
+
+//function for edit product
+const editProduct = async (req, res) => {
+    try {
+        const { productId, name, description, price, category, subCategory, sizes, bestseller } = req.body;
+
+        // Find existing product
+        const product = await productModel.findById(productId);
+        if (!product) {
+            return res.json({ success: false, message: "Sản phẩm không tồn tại" });
+        }
+
+        // Handle image uploads
+        const image1 = req.files.image1 && req.files.image1[0];
+        const image2 = req.files.image2 && req.files.image2[0];
+        const image3 = req.files.image3 && req.files.image3[0];
+        const image4 = req.files.image4 && req.files.image4[0];
+
+        const newImages = [image1, image2, image3, image4].filter((item) => item !== undefined);
+
+        let imagesUrl = product.image; // Keep existing images
+
+        // If new images are uploaded, replace old ones
+        if (newImages.length > 0) {
+            imagesUrl = await Promise.all(
+                newImages.map(async (image) => {
+                    let result = await cloudinary.uploader.upload(image.path, { resource_type: 'image' });
+                    return result.secure_url;
+                })
+            );
+        }
+
+        // Update product data
+        const updateData = {
+            name,
+            description,
+            category,
+            price: Number(price),
+            subCategory,
+            bestseller: bestseller === 'true' ? true : false,
+            sizes: JSON.parse(sizes),
+            image: imagesUrl,
+        };
+
+        await productModel.findByIdAndUpdate(productId, updateData);
+
+        res.json({ success: true, message: "Cập nhật sản phẩm thành công" });
+
+    } catch (error) {
+        console.log(error);
+        res.json({ success: false, message: error.message });
     }
 }
 
 //function for single product details
-const singleProduct = async(req,res)=>{
+const singleProduct = async (req, res) => {
     try {
-        
-        const {productId} = req.body;
+
+        const { productId } = req.body;
         const product = await productModel.findById(productId);
-        res.json({success:true,product});
+        res.json({ success: true, product });
 
     } catch (error) {
         console.log(error);
-        res.json({success:false,message:error.message});
+        res.json({ success: false, message: error.message });
     }
 }
 
-export {addProduct,listProduct,removeProduct,singleProduct};
+export { addProduct, listProduct, removeProduct, editProduct, singleProduct };

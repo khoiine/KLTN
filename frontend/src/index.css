@@ -8,7 +8,7 @@ a.active hr{
 }
 
 *{
-    font-family: Outfit;
+    font-family: Noto Sans JP, sans-serif;
 }
 
 @keyframes fade-in {

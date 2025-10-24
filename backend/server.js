@@ -9,6 +9,8 @@ import cartRouter from './routes/cartRoute.js';
 import orderRouter from './routes/orderRoute.js';
 import reviewRouter from './routes/reviewRoute.js';
 import dashboardRouter from './routes/dashboardRoute.js';
+import categoryRoutes from './routes/categoryRoutes.js';
+import subCategoryRouter from './routes/subCategoryRoute.js'
 
 //App Config
 const app = express();
@@ -28,6 +30,8 @@ app.use('/api/cart', cartRouter);
 app.use('/api/order',orderRouter)
 app.use('/api/review', reviewRouter)
 app.use('/api/dashboard', dashboardRouter)
+app.use('/api/category', categoryRoutes);
+app.use('/api/subcategory', subCategoryRouter)
 
 app.get('/',(req,res)=>{
     res.send("API working");

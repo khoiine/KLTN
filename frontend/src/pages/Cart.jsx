@@ -3,12 +3,40 @@ import { ShopContext } from "../context/ShopContext";
 import Title from "../components/Title";
 import { assets } from "../assets/assets";
 import CartTotal from "../components/CartTotal";
+import axios from 'axios'
+import { toast } from 'react-toastify'
 
 const Cart = () => {
-  const { products, currency, cartItems, updateQuantity, navigate } =
-    useContext(ShopContext);
+  const { products, currency, cartItems, updateQuantity, navigate, token, setCartItems, getCartCount, backendUrl } = useContext(ShopContext);
 
   const [cartData, setCartData] = useState([]);
+
+  const clearCart = async () => {
+    if (!window.confirm('Bạn có chắc chắn muốn xóa toàn bộ giỏ hàng?')) return;
+
+    try {
+      // Xóa ở frontend
+      setCartItems({})
+
+      // Xóa ở backend nếu user đăng nhập
+      if (token) {
+        const response = await axios.post(backendUrl + '/api/cart/clear', {}, {
+          headers: { token }
+        })
+
+        if (response.data.success) {
+          toast.success('Đã xóa toàn bộ giỏ hàng')
+        } else {
+          toast.error(response.data.message)
+        }
+      } else {
+        toast.success('Đã xóa toàn bộ giỏ hàng')
+      }
+    } catch (error) {
+      console.error('clearCart error:', error)
+      toast.error('Xóa giỏ hàng thất bại')
+    }
+  }
 
   useEffect(() => {
     if (products.length > 0) {
@@ -33,6 +61,8 @@ const Cart = () => {
       <div className=" text-2xl mb-3">
         <Title text1={"Giỏ hàng"} text2={"của bạn"} />
       </div>
+
+
 
       <div>
         {cartData.map((item, index) => {
@@ -66,21 +96,29 @@ const Cart = () => {
                   </div>
                 </div>
               </div>
-              <input
-                onChange={(e) =>
-                  e.target.value === "" || e.target.value === "0"
-                    ? null
-                    : updateQuantity(
-                        item._id,
-                        item.size,
-                        Number(e.target.value)
-                      )
-                }
-                className="border max-w-10 sm:max-w-20 px-1 sm:px-2 py-1"
-                type="number"
-                min={1}
-                defaultValue={item.quantity}
-              />
+
+              {/* Nút tăng giảm số lượng sản phẩm */}
+              <div className='flex items-center border border-gray-300 w-max'>
+                <button
+                  onClick={() => updateQuantity(item._id, item.size, item.quantity - 1)}
+                  className='border-none text-xl font-bold px-3 py-1 bg-white-100 hover:bg-white-200 rounded'
+                >
+                  -
+                </button>
+                <input
+                  onChange={(e) => e.target.value === '' || e.target.value === '0' ? null : updateQuantity(item._id, item.size, Number(e.target.value))}
+                  className='border-none text-l max-w-16 text-center px-2 py-1 rounded'
+                  type="numeric"
+                  readOnly
+                  min={1}
+                  value={item.quantity} />
+                <button
+                  onClick={() => updateQuantity(item._id, item.size, item.quantity + 1)}
+                  className='border-none text-xl font-bold px-3 py-1 bg-white-100 hover:bg-white-200 rounded'
+                >
+                  +
+                </button>
+              </div>
 
               <img
                 onClick={() => updateQuantity(item._id, item.size, 0)}
@@ -92,19 +130,27 @@ const Cart = () => {
           );
         })}
       </div>
-      <div className="flex justify-end my-20">
-        <div className="w-full sm:w-[450px]">
-          <CartTotal />
-          <div className=" w-full text-end">
-            <button
-              onClick={() => navigate("/place-order")}
-              className="bg-black text-white text-base my-8 px-8 py-3 rounded-3xl"
-            >
-              Thanh toán
-            </button>
+      {getCartCount() > 0 && (
+        <div className="flex justify-end my-20">
+          <div className="w-full sm:w-[450px]">
+            <CartTotal />
+            <div className="w-full text-end">
+              <button
+                onClick={clearCart}
+                className="bg-black mr-5 text-white text-base my-8 px-8 py-3 rounded-3xl"
+              >
+                Xóa giỏ hàng
+              </button>
+              <button
+                onClick={() => navigate("/place-order")}
+                className="bg-black text-white text-base my-8 px-8 py-3 rounded-3xl"
+              >
+                Thanh toán
+              </button>
+            </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };

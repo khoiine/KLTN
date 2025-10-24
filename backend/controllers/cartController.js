@@ -25,12 +25,12 @@ const addToCart = async (req, res) => {
             if (cartData[itemId][size]) {
                 cartData[itemId][size] += 1;
             }
-            else{
+            else {
                 cartData[itemId][size] = 1;
             }
-        }else{
+        } else {
             cartData[itemId] = {};
-            cartData[itemId][size] =  1;
+            cartData[itemId][size] = 1;
         }
 
         await userModel.findByIdAndUpdate(userId, { cartData });
@@ -39,7 +39,7 @@ const addToCart = async (req, res) => {
     } catch (error) {
         console.log(error);
         res.json({ success: false, message: error.message });
-        
+
     }
 };
 
@@ -63,7 +63,7 @@ const updateCart = async (req, res) => {
         }
 
         let cartData = userData.cartData || {};
-        
+
         if (!cartData[itemId]) {
             cartData[itemId] = {};
         }
@@ -80,7 +80,7 @@ const updateCart = async (req, res) => {
 
 //get user cart data
 const getUserCart = async (req, res) => {
-    
+
     try {
         const { userId, isAdmin } = req.body;
 
@@ -95,7 +95,7 @@ const getUserCart = async (req, res) => {
         }
 
         const userData = await userModel.findById(userId);
-        
+
         // Nếu không tìm thấy user
         if (!userData) {
             return res.json({ success: false, message: "Không tìm thấy người dùng" });
@@ -112,26 +112,18 @@ const getUserCart = async (req, res) => {
 };
 
 //clear user cart
-const clearCart = async (req, res) => {
+const clearUserCart = async (req, res) => {
     try {
-        const { userId, isAdmin } = req.body;
+        const { userId } = req.body
 
-        // Admin không có giỏ hàng để xóa
-        if (isAdmin) {
-            return res.json({ success: true, message: 'Admin không có giỏ hàng để xóa' });
-        }
+        await userModel.findByIdAndUpdate(userId, { cartData: {} })
 
-        if (!userId) {
-            return res.json({ success: false, message: 'User ID không hợp lệ' });
-        }
-
-        await userModel.findByIdAndUpdate(userId, { cartData: {} });
-        res.json({ success: true, message: 'Giỏ hàng đã được xóa' });
+        res.json({ success: true, message: "Giỏ hàng đã được xóa" })
 
     } catch (error) {
-        console.log(error);
-        res.json({ success: false, message: error.message });
+        console.log(error)
+        res.json({ success: false, message: error.message })
     }
-};
+}
 
-export { addToCart, updateCart, getUserCart, clearCart };
+export { addToCart, updateCart, getUserCart, clearUserCart };

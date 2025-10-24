@@ -53,7 +53,7 @@ const Orders = ({token}) => {
 
     return(
         <div>
-            <h3>Đơn hàng</h3>
+            <h3>Quản lý đơn hàng</h3>
             <div>
                 {
                     orders.map((order,index) => (

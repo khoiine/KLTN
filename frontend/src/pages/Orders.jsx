@@ -5,22 +5,22 @@ import axios from 'axios';
 
 const Orders = () => {
 
-  const {backendUrl, token, currency} = useContext(ShopContext);
+  const { backendUrl, token, currency } = useContext(ShopContext);
 
   const [orderData, setorderData] = useState([])
 
   const loadOrderData = useCallback(async () => {
     try {
-      if(!token){
+      if (!token) {
         return null
       }
 
-      const response = await axios.post(backendUrl + '/api/order/userorders', {},{headers:{token}})
-      if(response.data.success){
+      const response = await axios.post(backendUrl + '/api/order/userorders', {}, { headers: { token } })
+      if (response.data.success) {
         let allOrdersItem = []
-        response.data.orders.map((order)=>{
+        response.data.orders.map((order) => {
           // Backend đã lọc đơn hàng phù hợp, hiển thị tất cả đơn hàng được trả về
-          order.items.map((item)=>{
+          order.items.map((item) => {
             item['status'] = order.status
             item['payment'] = order.payment
             item['paymentMethod'] = order.paymentMethod
@@ -28,25 +28,25 @@ const Orders = () => {
             allOrdersItem.push(item)
           })
         })
-        setorderData(allOrdersItem.reverse())    
+        setorderData(allOrdersItem.reverse())
       }
-      
-      
+
+
     } catch (error) {
       console.log(error)
     }
   }, [token, backendUrl])
 
-    useEffect(() => {
-      loadOrderData()
-  },[loadOrderData])
+  useEffect(() => {
+    loadOrderData()
+  }, [loadOrderData])
 
 
   //Chuyển ngày sang dạng dd/mm/yyyy
   const formatDate = (dateString) => {
     const date = new Date(dateString);
     const day = String(date.getDate()).padStart(2, '0');
-    const month = String(date.getMonth() + 1).padStart(2, '0'); 
+    const month = String(date.getMonth() + 1).padStart(2, '0');
     const year = date.getFullYear();
     return `${day}/${month}/${year}`;
   };
@@ -54,12 +54,12 @@ const Orders = () => {
   return (
     <div className='border-t pt-16'>
       <div className='text-2xl'>
-        <Title text1={'Đơn hàng'} text2={'của tôi'}/>
+        <Title text1={'Đơn hàng'} text2={'của tôi'} />
       </div>
 
       <div>
         {
-          orderData.map((item, index)=>(
+          orderData.map((item, index) => (
             <div key={index} className='py-4 border-t text-gray-700 flex flex-col md:flex-row md:items-center md:justify-between gap-4'>
               <div className='flex items-start gap-6 text-sm'>
                 <img className='w-16 sm:w-20' src={item.image[0]} alt="" />
