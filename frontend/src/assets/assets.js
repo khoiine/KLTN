@@ -19,6 +19,7 @@ import momopay_logo from "./momopay_logo.png";
 import paypal_logo from "./paypal_logo.png";
 import visa_logo from "./visa_logo.png";
 import cross_icon from "./cross_icon.png";
+import messenger_icon from "./messenger_icon.png"
 
 export const assets = {
   logo,
@@ -42,4 +43,5 @@ export const assets = {
   visa_logo,
   stripe_logo,
   cross_icon,
+  messenger_icon,
 };

@@ -1,8 +1,9 @@
 import axios from 'axios'
 import { useEffect, useState } from 'react'
-import { backendUrl, currency } from '../App'
+import { backendUrl, formatCurrency } from '../App'
 import { toast } from 'react-toastify'
 import { useNavigate } from 'react-router-dom'
+import ReactPaginate from 'react-paginate'
 
 const List = ({ token }) => {
     const navigate = useNavigate()
@@ -26,6 +27,9 @@ const List = ({ token }) => {
     const [selectedSubCategory, setSelectedSubCategory] = useState("All")
     const [categories, setCategories] = useState([])
     const [subCategories, setSubCategories] = useState([])
+
+    const [currentPage, setCurrentPage] = useState(0)
+    const PAGE_SIZE = 6 // 6 sản phẩm 1 trang
 
     // Fetch categories
     useEffect(() => {
@@ -115,6 +119,7 @@ const List = ({ token }) => {
         }
 
         setFilteredList(products);
+        setCurrentPage(0);
     };
 
     useEffect(() => {
@@ -124,6 +129,16 @@ const List = ({ token }) => {
     useEffect(() => {
         applyFilters();
     }, [list, searchTerm, selectedCategory, selectedSubCategory]);
+
+    const pageCount = Math.ceil(filteredList.length / PAGE_SIZE)
+    const startIndex = currentPage * PAGE_SIZE
+    const endIndex = startIndex + PAGE_SIZE
+    const currentProducts = filteredList.slice(startIndex, endIndex)
+
+    const handlePageClick = (event) => {
+        setCurrentPage(event.selected)
+        window.scrollTo({ top: 0, behavior: 'smooth' })
+    }
 
     return (
         <>
@@ -139,8 +154,34 @@ const List = ({ token }) => {
                     className='flex-1 min-w-[200px] px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500'
                 />
 
+                <select
+                    value={selectedCategory}
+                    onChange={(e) => setSelectedCategory(e.target.value)}
+                    className='px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500'
+                >
+                    <option value="All">Tất cả danh mục</option>
+                    {categories.map((cat) => (
+                        <option key={cat._id} value={cat.name}>
+                            {categoriesInVietnamese[cat.name] || cat.name}
+                        </option>
+                    ))}
+                </select>
+
+                <select
+                    value={selectedSubCategory}
+                    onChange={(e) => setSelectedSubCategory(e.target.value)}
+                    className='px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500'
+                >
+                    <option value="All">Tất cả loại</option>
+                    {subCategories.map((subCat) => (
+                        <option key={subCat._id} value={subCat.name}>
+                            {subCategoriesInVietnamese[subCat.name] || subCat.name}
+                        </option>
+                    ))}
+                </select>
+
                 <p className='text-gray-600 flex items-center px-2'>
-                    Hiển thị: {filteredList.length} / {list.length} sản phẩm
+                    Hiển thị: {currentProducts.length} / {filteredList.length} sản phẩm
                 </p>
             </div>
 
@@ -155,20 +196,50 @@ const List = ({ token }) => {
                     <b className='text-center'>Sửa sản phẩm</b>
                 </div>
 
-                {
-                    filteredList.map((item, index) => (
+                {currentProducts.length > 0 ? (
+                    currentProducts.map((item, index) => (
                         <div className='grid grid-cols-[1fr_3fr_1fr] md:grid-cols-[1fr_2fr_1fr_1fr_1fr_1fr_1fr] items-center gap-2 py-1 px-2 border text-sm' key={index}>
                             <img className='w-12' src={item.image[0]} alt="" />
                             <p>{item.name}</p>
                             <p>{categoriesInVietnamese[item.category] || item.category}</p>
                             <p>{subCategoriesInVietnamese[item.subCategory] || item.subCategory}</p>
-                            <p>{item.price}{currency}</p>
+                            <p>{formatCurrency(item.price)}</p>
                             <p onClick={() => removeProduct(item._id)} className='text-right md:text-center cursor-pointer text-lg text-red-500 hover:text-red-700'>X</p>
                             <p onClick={() => navigate(`/edit/${item._id}`)} className='text-right md:text-center cursor-pointer text-blue-500 hover:text-blue-700'>Sửa</p>
                         </div>
                     ))
-                }
+                ) : (
+                    <div className='text-center py-8 text-gray-500'>
+                        Không tìm thấy sản phẩm nào
+                    </div>
+                )}
             </div>
+
+            {/* Pagination */}
+            {pageCount > 1 && (
+                <div className='flex justify-center mt-6'>
+                    <ReactPaginate
+                        breakLabel="..."
+                        nextLabel="›"
+                        onPageChange={handlePageClick}
+                        pageRangeDisplayed={3}
+                        pageCount={pageCount}
+                        previousLabel="‹"
+                        renderOnZeroPageCount={null}
+                        forcePage={currentPage}
+                        containerClassName="flex gap-2 items-center"
+                        pageClassName="border border-gray-300 rounded"
+                        pageLinkClassName="px-3 py-1 block hover:bg-gray-100"
+                        previousClassName="border border-gray-300 rounded"
+                        previousLinkClassName="px-3 py-1 block hover:bg-gray-100"
+                        nextClassName="border border-gray-300 rounded"
+                        nextLinkClassName="px-3 py-1 block hover:bg-gray-100"
+                        activeClassName="bg-black text-white"
+                        activeLinkClassName="text-white"
+                        disabledClassName="opacity-50 cursor-not-allowed"
+                    />
+                </div>
+            )}
         </>
     )
 }

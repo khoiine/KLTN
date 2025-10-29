@@ -36,7 +36,7 @@ const Chatbot = () => {
     }
     
     if (message.includes('giao hàng') || message.includes('vận chuyển') || message.includes('ship')) {
-      return "🚚 Chúng tôi có hỗ trợ giao hàng toàn quốc:\n• Giao hàng nhanh từ: 2-3 ngày\n• Miễn phí ship cho đơn hàng trên 500.000đ"
+      return "🚚 Chúng tôi có hỗ trợ giao hàng toàn quốc, giao hàng nhanh từ: 2-3 ngày"
     }
     
     if (message.includes('thanh toán') || message.includes('payment') || message.includes('trả tiền')) {
@@ -60,7 +60,7 @@ const Chatbot = () => {
     }
     
     if (message.includes('đơn hàng') || message.includes('order') || message.includes('mua hàng')) {
-      return "📦 Về đơn hàng:\n• Theo dõi đơn hàng tại trang Đơn hàng\n• Xác nhận đơn hàng qua email/SMS\n• Hỗ trợ hủy/sửa đơn trước khi giao"
+      return "📦 Về đơn hàng:\n• Theo dõi đơn hàng tại trang Đơn hàng\n• Hỗ trợ hủy đơn trước khi xác nhận"
     }
     
     if (message.includes('tài khoản') || message.includes('đăng ký') || message.includes('login') || message.includes('account') || message.includes('acc')) {

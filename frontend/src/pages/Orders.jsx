@@ -2,6 +2,7 @@ import { useContext, useEffect, useState, useCallback } from 'react'
 import { ShopContext } from '../context/ShopContext';
 import Title from '../components/Title';
 import axios from 'axios';
+import { formatVND } from '../App';
 
 const Orders = () => {
 
@@ -66,7 +67,7 @@ const Orders = () => {
                 <div>
                   <p className='sm:text-base font-medium'>{item.name}</p>
                   <div className=' flex items-center gap-3 mt-2 text-base text-gray-700'>
-                    <p className='text-lg'>{item.price}{currency}</p>
+                    <p className='text-lg'>{formatVND(item.price)}</p>
                     <p>Số lượng: {item.quantity}</p>
                     <p>Size: {item.size}</p>
                   </div>

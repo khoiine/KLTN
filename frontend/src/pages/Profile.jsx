@@ -5,7 +5,7 @@ import { toast } from 'react-toastify'
 
 const Profile = () => {
     const { token, backendUrl, navigate, userInfo, fetchUserInfo } = useContext(ShopContext)
-    
+
     const [profileData, setProfileData] = useState({
         firstName: '',
         lastName: '',
@@ -22,7 +22,7 @@ const Profile = () => {
             navigate('/login')
             return
         }
-        
+
         if (userInfo) {
             const nameParts = userInfo.name ? userInfo.name.split(' ') : ['', ''];
             setProfileData({
@@ -46,7 +46,7 @@ const Profile = () => {
 
     const onSubmitHandler = async (event) => {
         event.preventDefault()
-        
+
         try {
             // Convert back to database format
             const updateData = {
@@ -115,7 +115,7 @@ const Profile = () => {
                                 value={profileData.lastName}
                             />
                         </div>
-                        
+
                         <input
                             required
                             className='border border-gray-300 rounded py-1.5 px-3.5 w-full'
@@ -126,7 +126,7 @@ const Profile = () => {
                             value={profileData.email}
                             disabled
                         />
-                        
+
                         <input
                             required
                             className='border border-gray-300 rounded py-1.5 px-3.5 w-full'
@@ -146,7 +146,7 @@ const Profile = () => {
                             onChange={onChangeHandler}
                             value={profileData.city}
                         />
-                        
+
                         <div className='flex gap-3'>
                             <input
                                 required
@@ -179,6 +179,9 @@ const Profile = () => {
                         />
 
                         <div className='w-full text-end'>
+                            <button onClick={() => navigate('/change-password')} className='bg-black text-white py-2 px-8 text-sm mr-4'>
+                                ĐỔI MẬT KHẨU
+                            </button>
                             <button className='bg-black text-white py-2 px-8 text-sm' type='submit'>
                                 CẬP NHẬT THÔNG TIN
                             </button>

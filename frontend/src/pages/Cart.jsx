@@ -5,9 +5,10 @@ import { assets } from "../assets/assets";
 import CartTotal from "../components/CartTotal";
 import axios from 'axios'
 import { toast } from 'react-toastify'
+import { formatVND } from "../App";
 
 const Cart = () => {
-  const { products, currency, cartItems, updateQuantity, navigate, token, setCartItems, getCartCount, backendUrl } = useContext(ShopContext);
+  const { products, cartItems, updateQuantity, navigate, token, setCartItems, getCartCount, backendUrl } = useContext(ShopContext);
 
   const [cartData, setCartData] = useState([]);
 
@@ -87,8 +88,7 @@ const Cart = () => {
                   </p>
                   <div className="flex items-center gap-5 mt-2">
                     <p>
-                      {currency}
-                      {productData.price}
+                      {formatVND(productData.price)}
                     </p>
                     <p className="px-2 sm:px-3 sm:py-1 border bg-slate-50 rounded-2xl">
                       {item.size}

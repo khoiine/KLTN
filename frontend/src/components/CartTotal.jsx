@@ -2,10 +2,11 @@ import React, { useContext } from 'react'
 import { ShopContext } from '../context/ShopContext';
 import Title from './Title';
 import Navbar from '../components/Navbar';
+import { formatVND } from '../App';
 
 const CartTotal = () => {
 
-    const {currency, delivery_fee, getCartAmount} = useContext(ShopContext);
+    const { delivery_fee, getCartAmount} = useContext(ShopContext);
 
   return (
     <div className='w-full'>
@@ -16,17 +17,17 @@ const CartTotal = () => {
       <div className=' flex flex-col gap-2 mt-2 text-sm'>
         <div className='flex justify-between'>
             <p>Tổng</p>
-            <p>{getCartAmount()}.00 {currency}</p>
+            <p>{formatVND(getCartAmount())}</p>
         </div>
         <hr />
         <div className='flex justify-between'>
             <p>Phí vận chuyển</p>
-            <p>{delivery_fee} {currency}</p>
+            <p>{formatVND(delivery_fee)}</p>
         </div>
         <hr />
         <div className='flex justify-between'>
             <b>Tổng hoá đơn</b>
-            <b>{getCartAmount() === 0 ? 0 : getCartAmount() + delivery_fee}{currency}</b>
+            <b>{formatVND(getCartAmount() === 0 ? 0 : getCartAmount() + delivery_fee)}</b>
         </div>
       </div>
     </div>

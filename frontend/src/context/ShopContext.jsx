@@ -17,6 +17,7 @@ const ShopContextProvider = (props) => {
     const [token, setToken] = useState('')
     const [userInfo, setUserInfo] = useState(null)
     const [isAdmin, setIsAdmin] = useState(false)
+    const [unreadCount, setUnreadCount] = useState(0);
     const navigate = useNavigate();
 
     const addToCart = async (itemId, size) => {
@@ -201,6 +202,22 @@ const ShopContextProvider = (props) => {
         }
     }
 
+    // Fetch unread count
+    const fetchUnreadCount = async () => {
+        try {
+            if (!token) {
+                setUnreadCount(0);
+                return;
+            }
+            const response = await axios.post(backendUrl + '/api/chat/unread-count', {}, { headers: { token } });
+            if (response.data.success) {
+                setUnreadCount(response.data.unreadCount);
+            }
+        } catch (error) {
+            console.log(error);
+        }
+    };
+
     useEffect(() => {
         getProductsData()
     }, [])
@@ -228,6 +245,15 @@ const ShopContextProvider = (props) => {
         if (saved) setCartItems(JSON.parse(saved))
     }, [])
 
+    useEffect(() => {
+        if (token) {
+            fetchUnreadCount();
+            // Poll every 10 seconds
+            const interval = setInterval(fetchUnreadCount, 10000);
+            return () => clearInterval(interval);
+        }
+    }, [token]);
+
     const value = {
         products, currency, delivery_fee,
         search, setSearch, showSearch, setShowSearch,
@@ -235,7 +261,10 @@ const ShopContextProvider = (props) => {
         getCartCount, updateQuantity,
         getCartAmount, navigate, backendUrl,
         setToken, token, checkout, userInfo, fetchUserInfo, clearCart, refreshCart,
-        isAdmin, setIsAdmin
+        isAdmin, setIsAdmin,
+        unreadCount,
+        setUnreadCount,
+        fetchUnreadCount
     }
     return (
         <ShopContext.Provider value={value}>

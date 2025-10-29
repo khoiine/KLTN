@@ -1,11 +1,10 @@
 import { useEffect, useState, useCallback } from 'react'
 import axios from 'axios'
-import { backendUrl, currency } from '../App'
 import { toast } from 'react-toastify'
 import { assets } from '../assets/assets'
+import { backendUrl, formatCurrency } from '../App'
 
 const Orders = ({token}) => {
-
     const [orders, setOrders] = useState([])
     
     const fetchAllOrders = useCallback(async () => {
@@ -83,7 +82,7 @@ const Orders = ({token}) => {
                     <p>Thanh toán : {order.payment ? 'Hoàn tất' : 'Chờ xử lý'}</p>
                     <p>Ngày : {new Date(order.date).toLocaleDateString()}</p>
                 </div>
-                <p className='text-sm sm:text-[-15px]'>Giá: {order.amount}{currency}</p>
+                <p className='text-sm sm:text-[-15px]'>Giá: {formatCurrency(order.amount)}</p>
                 <select onChange={(event)=>statusHandler(event,order._id)} value={order.status} className='p-2 font-semibold'>
                     <option value="Đã đặt hàng">Đã đặt hàng</option>
                     <option value="Đóng gói">Đóng gói</option>

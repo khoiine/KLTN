@@ -1,6 +1,7 @@
 import React, { useContext } from 'react';
 import { ShopContext } from '../context/ShopContext';
 import {Link} from 'react-router-dom';
+import { formatVND } from '../App'
 
 const ProductItem = ({id,image,name,price}) => {
 
@@ -12,7 +13,7 @@ const ProductItem = ({id,image,name,price}) => {
         <img className='hover:scale-110 transition ease-in-out' src={image[0]} alt="" />
       </div>
       <p className='pt-3 pb-1 text-sm'>{name}</p>
-      <p className=' text-sm font-medium'>{price}{currency}</p>
+      <p className=' text-sm font-medium'>{formatVND(price)}</p>
     </Link>
   )
 }

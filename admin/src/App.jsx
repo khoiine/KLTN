@@ -14,9 +14,15 @@ import 'react-toastify/dist/ReactToastify.css';
 import EditProduct from './pages/EditProduct'
 import CategoryManagement from './pages/CategoryManagement'
 import SubCategoryManagement from './pages/SubCategoryManagement'
+import ChatManagement from './pages/ChatManagement' 
+import AdminContextProvider from './context/AdminContext';
+import BlogManagement from './pages/BlogManagement'
 
 export const backendUrl = import.meta.env.VITE_BACKEND_URL
-export const currency = '₫'
+
+export const formatCurrency = (value) =>
+  new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' })
+    .format(typeof value === 'number' ? value : Number(value || 0));
 
 const App = () => {
   const [searchParams] = useSearchParams();
@@ -43,6 +49,7 @@ const App = () => {
       {token === ""
         ? <Login setToken={setToken} />
         : <>
+          <AdminContextProvider token={token}>
           <Navbar setToken={setToken} />
           <hr />
           <div className='flex w-full'>
@@ -59,9 +66,12 @@ const App = () => {
                 <Route path='/reviews' element={<AdminReviews token={token} />} />
                 <Route path='/categories' element={<CategoryManagement token={token} />} />
                 <Route path='/subcategories' element={<SubCategoryManagement token={token} />} />
+                <Route path='/chat' element={<ChatManagement token={token} />} />
+                <Route path='/blogs' element={<BlogManagement token={token} />} />
               </Routes>
             </div>
           </div>
+          </AdminContextProvider>
         </>
       }
     </div>

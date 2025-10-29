@@ -1,122 +1,193 @@
 import validator from "validator";
 import bcrypt from "bcrypt";
-import jwt from "jsonwebtoken";
-import userModel from "../models/userModel.js";
+import jwt from 'jsonwebtoken'
 import crypto from 'crypto';
+import userModel from "../models/userModel.js";
 import transporter from '../config/nodemailer.js';
+import { OAuth2Client } from 'google-auth-library';
 
 const createToken = (id) => {
-    return jwt.sign({id},process.env.JWT_SECRET);
+    return jwt.sign({ id }, process.env.JWT_SECRET);
+}
+
+const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID)
+
+// Google Login
+const googleLogin = async (req, res) => {
+    try {
+        const { credential } = req.body
+        
+        // Verify Google token
+        const ticket = await client.verifyIdToken({
+            idToken: credential,
+            audience: process.env.GOOGLE_CLIENT_ID
+        })
+        
+        const payload = ticket.getPayload()
+        const { email, name, sub: googleId, picture } = payload
+
+        if (!email) {
+            return res.json({ success: false, message: 'Email không hợp lệ từ Google' })
+        }
+
+        // Kiểm tra user tồn tại
+        let user = await userModel.findOne({ email })
+
+        if (!user) {
+            // Tạo tài khoản với Google
+            user = await userModel.create({
+                name,
+                email,
+                password: await bcrypt.hash(googleId, 10), // Use Google ID as password hash
+                googleId,
+                avatar: picture
+            })
+        } else if (!user.googleId) {
+            // Liên kết tài khoản Google
+            user.googleId = googleId
+            if (picture) user.avatar = picture
+            await user.save()
+        }
+
+        // Nếu là admin
+        const isAdmin = email === process.env.ADMIN_EMAIL
+
+        // Tạo token
+        const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET)
+
+        res.json({ 
+            success: true, 
+            token, 
+            isAdmin,
+            message: 'Đăng nhập Google thành công'
+        })
+
+    } catch (error) {
+        console.log(error)
+        res.json({ success: false, message: 'Đăng nhập Google thất bại' })
+    }
 }
 
 //Route for user login
-const loginUser = async (req,res)=>{
+const loginUser = async (req, res) => {
     try {
-        
-        const {email,password} = req.body;
+
+        const { email, password } = req.body;
 
         // Kiểm tra nếu là tài khoản admin
         if (email === process.env.ADMIN_EMAIL && password === process.env.ADMIN_PASSWORD) {
-            const token = jwt.sign({email: email, isAdmin: true}, process.env.JWT_SECRET);
+            const token = jwt.sign({ email: email, isAdmin: true }, process.env.JWT_SECRET);
             return res.json({
-                success: true, 
-                token, 
+                success: true,
+                token,
                 isAdmin: true,
                 message: "Đăng nhập admin thành công"
             });
         }
 
         //checking user exists or not
-        const user = await userModel.findOne({email});
+        const user = await userModel.findOne({ email });
 
         if (!user) {
-            return res.json({success:false,message:"Tài khoản không tồn tại"});
+            return res.json({ success: false, message: "Tài khoản không tồn tại" });
         }
 
-        const isMatch = await bcrypt.compare(password,user.password);
+        const isMatch = await bcrypt.compare(password, user.password);
 
         if (isMatch) {
             const token = createToken(user._id);
             res.json({
-                success: true, 
-                token, 
+                success: true,
+                token,
                 isAdmin: false,
                 message: "Đăng nhập thành công"
             });
         }
-        else{
-            res.json({success:false,message:"Email hoặc mật khẩu không hợp lệ."});
+        else {
+            res.json({ success: false, message: "Email hoặc mật khẩu không hợp lệ." });
         }
 
     } catch (error) {
         console.log(error);
-        res.json({success:false,message:error.message});
+        res.json({ success: false, message: error.message });
     }
 }
 
 //Route for user registration
-const registerUser = async (req,res)=>{
+const registerUser = async (req, res) => {
 
     try {
-        const {name,email,password} = req.body;
+        const { name, email, password } = req.body;
 
         //checking user already exists or not
-        const exists = await userModel.findOne({email});
+        const exists = await userModel.findOne({ email });
         if (exists) {
-            return res.json({success:false, message:"Tài khoản đã tồn tại"});
+            return res.json({ success: false, message: "Tài khoản đã tồn tại" });
         }
 
         //validating email format & strong password
         if (!validator.isEmail(email)) {
-            return res.json({success:false, message:"Vui lòng nhập đúng định dạng email"});
+            return res.json({ success: false, message: "Vui lòng nhập đúng định dạng email" });
         }
         if (password.length < 8) {
-            return res.json({success:false, message:"Vui lòng nhập mật khẩu mạnh hơn"});
+            return res.json({ success: false, message: "Vui lòng nhập mật khẩu mạnh hơn" });
         }
 
         //hasing password
         const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash(password,salt);
+        const hashedPassword = await bcrypt.hash(password, salt);
 
         const newUser = new userModel({
             name,
             email,
-            password:hashedPassword
+            password: hashedPassword
         });
 
         const user = await newUser.save();
 
         const token = createToken(user._id);
 
-        res.json({success:true,token});
+        res.json({ success: true, token });
 
 
     } catch (error) {
         console.log(error);
-        res.json({success:false,message:error.message});
-        
+        res.json({ success: false, message: error.message });
+
     }
 }
 
 //Route for admin login
-
-const adminLogin = async (req,res)=>{
+const adminLogin = async (req, res) => {
     try {
-        
-        const {email,password} = req.body;
-        if (email === process.env.ADMIN_EMAIL && password === process.env.ADMIN_PASSWORD) {
-            const token = jwt.sign(email+password,process.env.JWT_SECRET);
-            res.json({success:true,token});
-        }else{
-            res.json({success:false,message:"Email hoặc mật khẩu không hợp lệ"});
+        const { email, password } = req.body
+
+        if (email !== process.env.ADMIN_EMAIL || password !== process.env.ADMIN_PASSWORD) {
+            return res.json({ success: false, message: 'Sai tài khoản hoặc mật khẩu' })
         }
 
-    } catch (error) {
-        console.log(error);
-        res.json({success:false,message:error.message});
-        
-    }
+        // Ensure an admin user exists in DB so we have a valid ObjectId for sender
+        let adminUser = await userModel.findOne({ email: process.env.ADMIN_EMAIL })
+        if (!adminUser) {
+            const salt = await bcrypt.genSalt(10)
+            const hashedPassword = await bcrypt.hash(password, salt)
+            adminUser = await userModel.create({
+                name: 'Admin',
+                email: process.env.ADMIN_EMAIL,
+                password: hashedPassword
+            })
+        }
 
+        // Include id and role in token
+        const token = jwt.sign(
+            { id: adminUser._id, email: adminUser.email, role: 'admin' },
+            process.env.JWT_SECRET
+        )
+        return res.json({ success: true, token })
+    } catch (error) {
+        console.log(error)
+        res.json({ success: false, message: error.message })
+    }
 }
 
 // Route to get user info
@@ -126,8 +197,8 @@ const getUserInfo = async (req, res) => {
 
         // Nếu là admin
         if (isAdmin) {
-            return res.json({ 
-                success: true, 
+            return res.json({
+                success: true,
                 user: {
                     name: "Admin",
                     email: adminEmail,
@@ -142,8 +213,8 @@ const getUserInfo = async (req, res) => {
             return res.json({ success: false, message: "User not found" });
         }
 
-        res.json({ 
-            success: true, 
+        res.json({
+            success: true,
             user: {
                 ...user.toObject(),
                 isAdmin: false
@@ -217,7 +288,7 @@ const forgotPassword = async (req, res) => {
 
         // Send email
         const resetUrl = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`
-        
+
         const mailOptions = {
             from: process.env.EMAIL_USER,
             to: email,
@@ -276,4 +347,42 @@ const resetPassword = async (req, res) => {
     }
 }
 
-export { loginUser, registerUser, adminLogin, getUserInfo, updateProfile, getAllUsers, forgotPassword, resetPassword };
+// Change password
+const changePassword = async (req, res) => {
+    try {
+        const { userId, currentPassword, newPassword } = req.body;
+
+        if (!currentPassword || !newPassword) {
+            return res.json({ success: false, message: 'Vui lòng nhập đầy đủ thông tin' });
+        }
+
+        if (newPassword.length < 6) {
+            return res.json({ success: false, message: 'Mật khẩu mới phải có ít nhất 6 ký tự' });
+        }
+
+        const user = await userModel.findById(userId);
+        if (!user) {
+            return res.json({ success: false, message: 'Người dùng không tồn tại' });
+        }
+
+        // Verify current password
+        const isMatch = await bcrypt.compare(currentPassword, user.password);
+        if (!isMatch) {
+            return res.json({ success: false, message: 'Mật khẩu hiện tại không đúng' });
+        }
+
+        // Hash new password
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+        // Update password
+        await userModel.findByIdAndUpdate(userId, { password: hashedPassword });
+
+        res.json({ success: true, message: 'Đổi mật khẩu thành công' });
+    } catch (error) {
+        console.log(error);
+        res.json({ success: false, message: error.message });
+    }
+};
+
+export { loginUser, registerUser, adminLogin, getUserInfo, updateProfile, getAllUsers, forgotPassword, resetPassword, changePassword , googleLogin }

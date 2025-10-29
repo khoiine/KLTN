@@ -19,6 +19,16 @@ import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
+import ChangePassword from './pages/ChangePassword';
+import Chat from './pages/Chat';
+import Blog from './pages/Blog'
+import BlogDetail from './pages/BlogDetail'
+
+export const backendUrl = import.meta.env.VITE_BACKEND_URL
+
+export const formatVND = (value) =>
+  new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' })
+    .format(typeof value === 'number' ? value : Number(value || 0));
 
 const App = () => {
   return (
@@ -41,6 +51,10 @@ const App = () => {
         <Route path='/cancel-order' element={<CancelOrder />} />
         <Route path='/forgot-password' element={<ForgotPassword />} />
         <Route path='/reset-password/:token' element={<ResetPassword />} />
+        <Route path='/change-password' element={<ChangePassword />} />
+        <Route path='/chat' element={<Chat />} />
+        <Route path='/blog' element={<Blog />} />
+        <Route path='/blog/:slug' element={<BlogDetail />} />
       </Routes>
       <Footer />
 

@@ -4,6 +4,7 @@ import LatestCollection from '../components/LatestCollection'
 import BestSeller from '../components/BestSeller'
 import OurPolicy from '../components/OurPolicy'
 import NewsletterBox from '../components/NewsletterBox'
+import Blog from '../components/Blog'
 
 
 const Home = () => {
@@ -12,6 +13,7 @@ const Home = () => {
       <Hero />
       <LatestCollection />
       <BestSeller/>      
+      <Blog/> 
       <OurPolicy />
       <NewsletterBox />
     </div>

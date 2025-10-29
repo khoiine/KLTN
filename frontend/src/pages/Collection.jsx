@@ -3,6 +3,7 @@ import { assets } from '../assets/assets';
 import Title from '../components/Title';
 import ProductItem from '../components/ProductItem';
 import { ShopContext } from '../context/ShopContext';
+import ReactPaginate from 'react-paginate';
 import axios from 'axios';
 
 const Collection = () => {
@@ -13,7 +14,9 @@ const Collection = () => {
   const [subCategory, setSubCategory] = useState([]);
   const [sortType, setSortType] = useState('relavent');
   const [categories, setCategories] = useState([]);
-  const [subCategories, setSubCategories] = useState([]); // Add this
+  const [subCategories, setSubCategories] = useState([]);
+  const [currentPage, setCurrentPage] = useState(0);
+  const itemsPerPage = 8;
   const backendUrl = import.meta.env.VITE_BACKEND_URL;
 
   // Fetch categories from backend
@@ -112,6 +115,15 @@ const Collection = () => {
     sortProduct();
   }, [sortType]);
 
+  const handlePageClick = (data) => {
+    setCurrentPage(data.selected);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const offset = currentPage * itemsPerPage;
+  const currentItems = filterProducts.slice(offset, offset + itemsPerPage);
+  const pageCount = Math.ceil(filterProducts.length / itemsPerPage);
+
   return (
     <div className='flex flex-col sm:flex-row gap-1 sm:gap-10 pt-10 border-t'>
       {/* Filter Options */}
@@ -207,7 +219,7 @@ const Collection = () => {
 
         {/* Map Products */}
         <div className='grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 gap-y-6'>
-          {filterProducts.map((item, index) => (
+          {currentItems.map((item, index) => (
             <ProductItem
               key={index}
               name={item.name}
@@ -217,6 +229,22 @@ const Collection = () => {
             />
           ))}
         </div>
+        <ReactPaginate
+          previousLabel={'←'}
+          nextLabel={'→'}
+          breakLabel={'...'}
+          breakClassName={'break-me'}
+          pageCount={pageCount}
+          marginPagesDisplayed={2}
+          pageRangeDisplayed={2}
+          onPageChange={handlePageClick}    
+          containerClassName={'flex justify-center mt-8'}
+          pageClassName={'mx-1'}
+          pageLinkClassName={'px-3 py-1 border border-gray-300 rounded-full '}
+          previousLinkClassName={'px-3 py-1 border border-gray-300 rounded-full '}
+          nextLinkClassName={'px-3 py-1 border border-gray-300 rounded-full'}
+          activeLinkClassName={'bg-black text-white'}
+        />
       </div>
     </div>
   );
