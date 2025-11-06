@@ -26,47 +26,71 @@ const Chatbot = () => {
   // Các câu trả lời tự động đơn giản
   const getBotResponse = (userMessage) => {
     const message = userMessage.toLowerCase()
-    
+
     if (message.includes('chào') || message.includes('hello') || message.includes('hi') || message.includes('xin chào')) {
       return "Xin chào! Tôi là trợ lý ảo của cửa hàng E-Commerce. Bạn cần hỗ trợ gì không ạ?"
     }
-    
+
     if (message.includes('sản phẩm') || message.includes('hàng hóa') || message.includes('shop')) {
       return "Chúng tôi có nhiều sản phẩm thời trang chất lượng cao. Bạn có thể xem tại trang Bộ sưu tập hoặc tìm kiếm sản phẩm cụ thể bằng thanh tìm kiếm."
     }
-    
+
     if (message.includes('giao hàng') || message.includes('vận chuyển') || message.includes('ship')) {
       return "🚚 Chúng tôi có hỗ trợ giao hàng toàn quốc, giao hàng nhanh từ: 2-3 ngày"
     }
-    
+
     if (message.includes('thanh toán') || message.includes('payment') || message.includes('trả tiền')) {
       return "💳 Chúng tôi hỗ trợ các hình thức thanh toán như:\n• ZaloPay\n• COD (Thanh toán khi nhận hàng)"
     }
-    
+
     if (message.includes('liên hệ') || message.includes('contact') || message.includes('hotline')) {
       return "📞 Liên hệ với chúng tôi:\n• Hotline: 0904.512.575\n• Email: contact@gmail.com.com\n• Hoặc qua trang Liên hệ của website"
     }
-    
+
     if (message.includes('size') || message.includes('kích thước') || message.includes('số đo') || message.includes('kích cỡ')) {
       return "📏 Về size sản phẩm:\n• Xem bảng size chi tiết tại mỗi sản phẩm\n• Tư vấn size miễn phí\n• Hỗ trợ đổi size trong 7 ngày"
     }
-    
+
     if (message.includes('đổi trả') || message.includes('return') || message.includes('hoàn trả')) {
       return "🔄 Chính sách đổi trả:\n• Thời gian: 7 ngày kể từ khi nhận hàng\n• Điều kiện: Còn nguyên tem mác, chưa sử dụng\n• Miễn phí đổi trả lần đầu"
     }
-    
+
     if (message.includes('giảm giá') || message.includes('khuyến mãi') || message.includes('sale') || message.includes('voucher')) {
       return "🎉 Khuyến mãi hiện tại:\n• Giảm 20% cho khách hàng mới\n• Mua 2 tặng 1 cho một số sản phẩm\n• Flash sale cuối tuần\n• Đăng ký nhận tin để cập nhật ưu đãi!"
     }
-    
+
     if (message.includes('đơn hàng') || message.includes('order') || message.includes('mua hàng')) {
       return "📦 Về đơn hàng:\n• Theo dõi đơn hàng tại trang Đơn hàng\n• Hỗ trợ hủy đơn trước khi xác nhận"
     }
-    
+
     if (message.includes('tài khoản') || message.includes('đăng ký') || message.includes('login') || message.includes('account') || message.includes('acc')) {
       return "👤 Tài khoản của bạn:\n• Đăng ký miễn phí để mua hàng\n• Theo dõi đơn hàng dễ dàng\n• Nhận thông báo ưu đãi đặc biệt"
     }
-    
+
+    if (message.includes('áo nam') || message.includes('áo thun nam') || message.includes('áo sơ mi nam')) {
+      return "👕 Áo nam tại cửa hàng gồm:\n• Áo thun basic, cổ tròn, cổ polo\n• Áo sơ mi công sở, sơ mi caro\n• Chất liệu cotton thoáng mát, dễ phối đồ\n➡️ Bạn có muốn xem áo thun hay áo sơ mi không?"
+    }
+
+    if (message.includes('áo nữ') || message.includes('áo thun nữ') || message.includes('áo kiểu') || message.includes('áo croptop')) {
+      return "👚 Áo nữ bên mình có nhiều mẫu:\n• Áo thun, áo kiểu, áo croptop\n• Mẫu mới cập nhật hàng tuần\n• Nhiều màu sắc, size từ S đến XXL\n➡️ Bạn muốn xem áo kiểu hay áo thun ạ?"
+    }
+
+    if (message.includes('áo khoác') || message.includes('khoác ngoài') || message.includes('jacket')) {
+      return "🧥 Áo khoác của shop gồm:\n• Áo khoác gió, áo khoác jean, áo hoodie\n• Phù hợp cho cả nam, nữ và trẻ em\n• Chống nắng, chống lạnh tùy mùa\n➡️ Bạn muốn xem áo khoác nam, nữ hay trẻ em?"
+    }
+
+    if (message.includes('quần nam') || message.includes('jean nam') || message.includes('quần short nam') || message.includes('kaki nam')) {
+      return "👖 Quần nam tại cửa hàng gồm:\n• Quần jeans, quần kaki, quần short\n• Form ôm, slimfit, hoặc dáng rộng\n• Màu cơ bản dễ phối đồ\n➡️ Bạn muốn mình gợi ý quần jean hay quần short?"
+    }
+
+    if (message.includes('quần nữ') || message.includes('quần jean nữ') || message.includes('quần ống rộng') || message.includes('quần tây nữ')) {
+      return "👖 Quần nữ hiện có:\n• Quần ống rộng, quần jeans, quần tây công sở\n• Vải co giãn, tôn dáng, dễ phối đồ\n➡️ Bạn quan tâm loại quần nào ạ?"
+    }
+
+    if (message.includes('trẻ em') || message.includes('bé trai') || message.includes('bé gái') || message.includes('kid') || message.includes('baby')) {
+      return "🧸 Sản phẩm trẻ em gồm:\n• Áo thun, quần short, váy cho bé gái\n• Quần áo cotton mềm, an toàn cho da bé\n• Size từ 1–12 tuổi\n➡️ Bạn muốn xem đồ cho bé trai hay bé gái?"
+    }
+
     // Phản hồi mặc định với gợi ý
     return "Cảm ơn bạn đã liên hệ! 😊\n\nTôi có thể hỗ trợ bạn về:\n• Sản phẩm và mua hàng\n• Giao hàng và thanh toán\n• Đổi trả và bảo hành\n• Khuyến mãi hiện tại\n\nHoặc liên hệ trực tiếp qua trang Liên hệ nhé!"
   }
@@ -82,7 +106,7 @@ const Chatbot = () => {
       isBot: false,
       timestamp: new Date()
     }
-    
+
     setMessages(prev => [...prev, userMessage])
     setInputMessage('')
 
@@ -127,7 +151,7 @@ const Chatbot = () => {
             </svg>
           )}
         </button>
-        
+
         {/* Thông báo có tin nhắn mới */}
         {!isOpen && (
           <div className="absolute -top-2 -left-2 bg-green-500 text-white text-xs rounded-full w-6 h-6 flex items-center justify-center animate-pulse">
@@ -144,7 +168,7 @@ const Chatbot = () => {
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 bg-red-400 rounded-full flex items-center justify-center">
                 <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M12 2C13.1 2 14 2.9 14 4C14 5.1 13.1 6 12 6C10.9 6 10 5.1 10 4C10 2.9 10.9 2 12 2ZM21 9V7L15 1H5C3.89 1 3 1.89 3 3V21C3 22.11 3.89 23 5 23H11V21H5V3H13V9H21Z"/>
+                  <path d="M12 2C13.1 2 14 2.9 14 4C14 5.1 13.1 6 12 6C10.9 6 10 5.1 10 4C10 2.9 10.9 2 12 2ZM21 9V7L15 1H5C3.89 1 3 1.89 3 3V21C3 22.11 3.89 23 5 23H11V21H5V3H13V9H21Z" />
                 </svg>
               </div>
               <div>
@@ -170,22 +194,20 @@ const Chatbot = () => {
                 className={`flex ${message.isBot ? 'justify-start' : 'justify-end'}`}
               >
                 <div
-                  className={`max-w-[80%] p-3 rounded-lg ${
-                    message.isBot
-                      ? 'bg-white text-gray-800 shadow-sm border'
-                      : 'bg-red-500 text-white'
-                  }`}
+                  className={`max-w-[80%] p-3 rounded-lg ${message.isBot
+                    ? 'bg-white text-gray-800 shadow-sm border'
+                    : 'bg-red-500 text-white'
+                    }`}
                 >
                   <p className="text-sm whitespace-pre-line">{message.text}</p>
-                  <p className={`text-xs mt-1 ${
-                    message.isBot ? 'text-gray-500' : 'text-red-100'
-                  }`}>
+                  <p className={`text-xs mt-1 ${message.isBot ? 'text-gray-500' : 'text-red-100'
+                    }`}>
                     {formatTime(message.timestamp)}
                   </p>
                 </div>
               </div>
             ))}
-            
+
             {/* Typing indicator khi bot đang trả lời */}
             {isTyping && (
               <div className="flex justify-start">
@@ -193,15 +215,15 @@ const Chatbot = () => {
                   <div className="flex items-center space-x-1">
                     <div className="flex space-x-1">
                       <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
-                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
                     </div>
                     <span className="text-xs text-gray-500 ml-2">Đang trả lời...</span>
                   </div>
                 </div>
               </div>
             )}
-            
+
             {/* Phần tử để cuộn xuống */}
             <div ref={messagesEndRef} />
           </div>

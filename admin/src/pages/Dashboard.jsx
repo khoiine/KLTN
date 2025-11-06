@@ -13,6 +13,7 @@ import { Bar, Doughnut } from 'react-chartjs-2'
 import axios from 'axios'
 import { backendUrl } from '../App'
 import { toast } from 'react-toastify'
+import { formatCurrency } from '../App'
 
 ChartJS.register(
     CategoryScale,
@@ -29,6 +30,7 @@ const Dashboard = ({ token }) => {
         totalProducts: 0,
         totalOrders: 0,
         totalUsers: 0,
+        totalBlogs: 0,
         recentOrders: [],
         ratingStats: {
             5: 0,
@@ -145,6 +147,11 @@ const Dashboard = ({ token }) => {
                     <h3 className='text-lg font-medium text-purple-800'>Tổng người dùng</h3>
                     <p className='text-3xl font-bold text-purple-600'>{dashboardData.totalUsers}</p>
                 </div>
+
+                <div className='bg-purple-50 p-6 rounded-lg border border-purple-200'>
+                    <h3 className='text-lg font-medium text-purple-800'>Tổng tin tức</h3>
+                    <p className='text-3xl font-bold text-purple-600'>{dashboardData.totalBlogs}</p>
+                </div>
             </div>
 
             {/* Biểu đồ */}
@@ -194,7 +201,7 @@ const Dashboard = ({ token }) => {
                                     <tr key={order._id} className='border-b'>
                                         <td className='py-2'>{order._id.slice(-6)}</td>
                                         <td className='py-2'>{order.address.firstName} {order.address.lastName}</td>
-                                        <td className='py-2'>{order.amount.toLocaleString()}₫</td>
+                                        <td className='py-2'>{formatCurrency(order.amount)}</td>
                                         <td className='py-2'>
                                             <span className={`px-2 py-1 rounded-full text-xs ${order.status === 'Hoàn tất' ? 'bg-green-100 text-green-800' :
                                                 order.status === 'Đang giao hàng' ? 'bg-blue-100 text-blue-800' :

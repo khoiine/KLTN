@@ -161,7 +161,7 @@ const BlogManagement = ({ token }) => {
     return (
         <div className='p-4'>
             <div className='flex justify-between items-center mb-6'>
-                <h1 className='text-2xl font-bold'>Quản lý Blog</h1>
+                <h1 className='text-2xl font-bold'>Quản lý Tin tức</h1>
                 <button
                     onClick={() => {
                         resetForm()
@@ -208,7 +208,7 @@ const BlogManagement = ({ token }) => {
                                             ? 'bg-green-100 text-green-800' 
                                             : 'bg-gray-100 text-gray-800'
                                     }`}>
-                                        {blog.status === 'published' ? 'Đã xuất bản' : 'Nháp'}
+                                        {blog.status === 'published' ? 'Đã xuất bản' : 'Ẩn bài'}
                                     </span>
                                 </td>
                                 <td className='p-4'>{blog.views}</td>
@@ -322,7 +322,7 @@ const BlogManagement = ({ token }) => {
                                             onChange={(e) => setStatus(e.target.value)}
                                             className='w-full p-2 border rounded'
                                         >
-                                            <option value='draft'>Nháp</option>
+                                            <option value='draft'>Ẩn bài</option>
                                             <option value='published'>Xuất bản</option>
                                         </select>
                                     </div>

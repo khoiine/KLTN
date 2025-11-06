@@ -1,14 +1,32 @@
 import orderModel from "../models/orderModel.js";
 import userModel from "../models/userModel.js";
-import axios from "axios";
-import CryptoJS from "crypto-js";
+import axios from 'axios'
+import crypto from 'crypto'
 import moment from "moment";
-
+import Product from '../models/productModel.js';
+import Order from '../models/orderModel.js';
+import CryptoJS from 'crypto-js';
 
 //Đặt hàng ship COD
 const placeOrder = async (req, res) => {
   try {
     const { userId, items, amount, address } = req.body;
+
+    // Kiểm tra còn hàng
+    for (const item of items) {
+      const product = await Product.findById(item._id)
+      if (!product) {
+        return res.json({ success: false, message: `Sản phẩm ${item.name} không tồn tại` })
+      }
+
+      const availableStock = product.stock.get(item.size) || 0
+      if (availableStock < item.quantity) {
+        return res.json({
+          success: false,
+          message: `Sản phẩm ${item.name} size ${item.size} chỉ còn ${availableStock} sản phẩm`
+        })
+      }
+    }
 
     const orderData = {
       userId,
@@ -18,6 +36,7 @@ const placeOrder = async (req, res) => {
       paymentMethod: "COD",
       payment: false,
       date: Date.now(),
+      status: 'Đang chờ xác nhận', // Trạng thái đơn hàng mới
     };
 
     const newOrder = new orderModel(orderData);
@@ -27,6 +46,19 @@ const placeOrder = async (req, res) => {
       userId,
       { cartData: {} }
     );
+
+    // Giảm tồn kho
+    for (const item of items) {
+      const product = await Product.findById(item._id)
+      const currentStock = product.stock.get(item.size) || 0
+      product.stock.set(item.size, Math.max(0, currentStock - item.quantity))
+
+      // Kiểm tra size còn hàng
+      const hasStock = Array.from(product.stock.values()).some(qty => qty > 0)
+      product.isAvailable = hasStock
+
+      await product.save()
+    }
 
     res.json({ success: true, message: "Đã đặt hàng" });
   } catch (error) {
@@ -56,6 +88,7 @@ const placeOrderZaloPay = async (req, res) => {
       paymentMethod: "ZaloPay",
       payment: false,
       date: Date.now(),
+      status: 'Đang chờ xác nhận', // Trạng thái đơn hàng mới
     };
 
     const newOrder = new orderModel(orderData);
@@ -99,14 +132,14 @@ const placeOrderZaloPay = async (req, res) => {
 
     if (response.data.return_code === 1) {
       // Cập nhật order với app_trans_id
-      await orderModel.findByIdAndUpdate(newOrder._id, { 
-        app_trans_id: order.app_trans_id 
+      await orderModel.findByIdAndUpdate(newOrder._id, {
+        app_trans_id: order.app_trans_id
       });
 
       // KHÔNG xóa giỏ hàng ở đây - chỉ xóa khi thanh toán thành công
-      
-      res.json({ 
-        success: true, 
+
+      res.json({
+        success: true,
         message: "Tạo đơn hàng thành công",
         order_url: response.data.order_url,
         app_trans_id: order.app_trans_id,
@@ -115,9 +148,9 @@ const placeOrderZaloPay = async (req, res) => {
     } else {
       // Xóa order nếu tạo payment thất bại
       await orderModel.findByIdAndDelete(newOrder._id);
-      res.json({ 
-        success: false, 
-        message: "Tạo thanh toán thất bại" 
+      res.json({
+        success: false,
+        message: "Tạo thanh toán thất bại"
       });
     }
 
@@ -131,13 +164,13 @@ const placeOrderZaloPay = async (req, res) => {
 const zaloPayCallback = async (req, res) => {
   try {
     const result = req.body;
-    
+
     // Xác thực callback
     const dataStr = result.data;
     const reqMac = result.mac;
-    
+
     const mac = CryptoJS.HmacSHA256(dataStr, config.key2).toString();
-    
+
     if (reqMac !== mac) {
       // Callback không hợp lệ
       return res.status(400).json({
@@ -145,60 +178,54 @@ const zaloPayCallback = async (req, res) => {
         return_message: "mac not equal"
       });
     }
-    
+
     // Parse dữ liệu
     const dataJson = JSON.parse(dataStr);
     const embed_data = JSON.parse(dataJson.embed_data);
-    
+
     console.log("ZaloPay callback received:", {
       app_trans_id: dataJson.app_trans_id,
       amount: dataJson.amount,
       orderId: embed_data.orderId,
       status: dataJson.status // Kiểm tra status từ ZaloPay
     });
-    
+
+    // Normalize status to number and treat '1' or 1 as success
+    const statusNum = Number(dataJson.status);
+
     // CHỈ cập nhật đơn hàng khi status = 1 (thanh toán thành công)
-    if (dataJson.status === 1) {
-      // Cập nhật trạng thái thanh toán
+    if (statusNum === 1) {
       const updatedOrder = await orderModel.findByIdAndUpdate(
         embed_data.orderId,
-        { 
+        {
           payment: true,
-          status: "Order Placed"
+          status: "Đã đặt hàng"
         },
         { new: true }
       );
-      
+
       if (updatedOrder) {
-        // Xóa giỏ hàng khi thanh toán thành công
-        await userModel.findByIdAndUpdate(updatedOrder.userId, { cartData: {} });
-        
-        console.log("Order updated successfully:", updatedOrder._id);
-        res.json({
-          return_code: 1,
-          return_message: "success"
-        });
+        console.log(`[ZaloPay] payment success — order updated: ${updatedOrder._id}, status=${updatedOrder.status}`);
+        // optional: clear user cart here if desired
+        return res.json({ return_code: 1, return_message: "success" });
       } else {
-        console.log("Order not found:", embed_data.orderId);
-        res.json({
-          return_code: 0,
-          return_message: "Order not found"
-        });
+        console.log(`[ZaloPay] payment success but order not found: ${embed_data.orderId}`);
+        return res.json({ return_code: 0, return_message: "Order not found" });
       }
     } else {
       // Nếu status khác 1 (thất bại hoặc hủy), xóa đơn hàng
-      console.log("Payment failed or cancelled, deleting order:", embed_data.orderId);
+      console.log("Payment failed or cancelled, deleting order:", embed_data.orderId, "zaloStatus:", dataJson.status);
       await orderModel.findByIdAndDelete(embed_data.orderId);
-      
-      res.json({
+
+      return res.json({
         return_code: 1, // Vẫn trả về 1 để ZaloPay biết đã xử lý
         return_message: "Order cancelled due to payment failure"
       });
     }
-    
+
   } catch (error) {
     console.log("ZaloPay callback error:", error);
-    res.json({
+    return res.json({
       return_code: 0,
       return_message: error.message
     });
@@ -209,21 +236,21 @@ const zaloPayCallback = async (req, res) => {
 const checkZaloPayStatus = async (req, res) => {
   try {
     const { app_trans_id } = req.body;
-    
+
     const postData = {
       app_id: config.app_id,
       app_trans_id: app_trans_id
     };
-    
+
     const data = postData.app_id + "|" + postData.app_trans_id + "|" + config.key1;
     postData.mac = CryptoJS.HmacSHA256(data, config.key1).toString();
-    
+
     const response = await axios.post("https://sb-openapi.zalopay.vn/v2/query", null, {
       params: postData
     });
-    
+
     res.json(response.data);
-    
+
   } catch (error) {
     console.log(error);
     res.json({ success: false, message: error.message });
@@ -243,9 +270,9 @@ const allOrders = async (req, res) => {
         { paymentMethod: "ZaloPay", payment: false, date: { $gte: tenMinutesAgo } } // ZaloPay chưa thanh toán nhưng mới tạo
       ]
     });
-    
-    res.json({success:true,orders})
-    
+
+    res.json({ success: true, orders })
+
   } catch (error) {
     console.log(error);
     res.json({ success: false, message: error.message });
@@ -261,7 +288,7 @@ const userOrders = async (req, res) => {
     // Lọc đơn hàng: 
     // - COD: hiển thị tất cả
     // - ZaloPay: chỉ hiển thị đã thanh toán HOẶC chưa thanh toán nhưng trong vòng 10 phút
-    const orders = await orderModel.find({ 
+    const orders = await orderModel.find({
       userId,
       $or: [
         { paymentMethod: "COD" }, // Tất cả đơn COD
@@ -269,7 +296,7 @@ const userOrders = async (req, res) => {
         { paymentMethod: "ZaloPay", payment: false, date: { $gte: tenMinutesAgo } } // ZaloPay chưa thanh toán nhưng mới tạo
       ]
     });
-    
+
     res.json({ success: true, orders });
   } catch (error) {
     console.log(error);
@@ -284,8 +311,8 @@ const updateStatus = async (req, res) => {
     const { orderId, status } = req.body;
 
     await orderModel.findByIdAndUpdate(orderId, { status })
-    res.json({success:true,message:'Cập nhật trạng thái'})
-    
+    res.json({ success: true, message: 'Cập nhật trạng thái' })
+
   } catch (error) {
     console.log(error);
     res.json({ success: false, message: error.message })
@@ -293,78 +320,182 @@ const updateStatus = async (req, res) => {
 };
 
 //Hủy đơn hàng khi thanh toán ZaloPay thất bại
-const cancelOrder = async (req, res) => {
+export const cancelOrder = async (req, res) => {
   try {
-    const { orderId } = req.body;
-    
-    // Xóa đơn hàng khỏi database
-    const deletedOrder = await orderModel.findByIdAndDelete(orderId);
-    
-    if (deletedOrder) {
-      res.json({ 
-        success: true, 
-        message: "Đơn hàng đã được hủy" 
-      });
-    } else {
-      res.json({ 
-        success: false, 
-        message: "Không tìm thấy đơn hàng" 
-      });
+    const { orderId, orderid } = req.body;
+    const id = orderId || orderid;
+    if (!id) return res.status(400).json({ success: false, message: 'orderId required' });
+
+    const order = await Order.findById(id);
+    if (!order) return res.status(404).json({ success: false, message: 'Order not found' });
+
+    // ownership check if you want to keep it — otherwise skip if project allows it
+    const userIdFromToken = req.user?.id || req.user?._id || null;
+    if (userIdFromToken && order.user && order.user.toString() !== userIdFromToken.toString()) {
+      return res.status(403).json({ success: false, message: 'Not allowed' });
     }
-    
-  } catch (error) {
-    console.log(error);
-    res.json({ success: false, message: error.message });
+
+    // only cancellable while waiting for admin confirmation
+    if (order.status !== 'Đang chờ xác nhận') {
+      return res.status(400).json({ success: false, message: 'Cannot cancel — already confirmed or processed' });
+    }
+
+    // restock items (best-effort)
+    try {
+      for (const it of order.items || []) {
+        const pid = it.productId || it.product;
+        const qty = Number(it.quantity || it.qty || 1);
+        if (!pid || !qty) continue;
+
+        const prod = await Product.findById(pid);
+        if (!prod) continue;
+
+        if (typeof prod.countInStock === 'number') prod.countInStock += qty;
+        else if (typeof prod.stock === 'number') prod.stock += qty;
+        else if (typeof prod.quantity === 'number') prod.quantity += qty;
+        else prod.available = (prod.available || 0) + qty;
+
+        // adapt size-specific logic here if needed
+        await prod.save();
+      }
+    } catch (restockErr) {
+      console.error('Restock error during cancel:', restockErr);
+      // continue to deletion even if restock partial failure
+    }
+
+    // delete order document so admin list no longer shows it
+    await Order.findByIdAndDelete(id);
+
+    return res.json({ success: true, orderId: id, message: 'Order cancelled and removed' });
+  } catch (err) {
+    console.error('cancelOrder error', err);
+    return res.status(500).json({ success: false, message: err.message });
   }
 };
 
-//Tự động xóa đơn hàng ZaloPay chưa thanh toán sau 10 phút
+// helper: query ZaloPay v2/query
+const queryZaloPay = async (app_trans_id) => {
+  try {
+    const postData = {
+      app_id: config.app_id,
+      app_trans_id
+    }
+    const data = `${postData.app_id}|${postData.app_trans_id}|${config.key1}`
+    const mac = crypto.createHmac('sha256', config.key1).update(data).digest('hex')
+
+    const resp = await axios.post('https://sb-openapi.zalopay.vn/v2/query', null, {
+      params: { app_id: postData.app_id, app_trans_id: postData.app_trans_id, mac }
+    })
+
+    return resp.data
+  } catch (err) {
+    console.error('[ZaloPay] query error', err?.response?.data || err.message)
+    return null
+  }
+}
+
+// safer cleanup: re-check and confirm with ZaloPay; do NOT delete if ZaloPay query fails
 const cleanupUnpaidOrders = async () => {
   try {
-    const tenMinutesAgo = Date.now() - (10 * 60 * 1000); // 10 phút trước
-    
-    // Tìm và xóa các đơn hàng ZaloPay chưa thanh toán sau 10 phút
-    const unpaidOrders = await orderModel.find({
-      paymentMethod: "ZaloPay",
-      payment: false,
-      date: { $lt: tenMinutesAgo }
-    });
-    
-    if (unpaidOrders.length > 0) {
-      const orderIds = unpaidOrders.map(order => order._id);
-      await orderModel.deleteMany({ _id: { $in: orderIds } });
-      console.log(`Cleaned up ${unpaidOrders.length} unpaid ZaloPay orders`);
+    const cutoff = Date.now() - (1 * 60 * 1000) // testing window
+    const candidates = await orderModel.find({
+      paymentMethod: 'ZaloPay',
+      $or: [{ payment: false }, { payment: { $exists: false } }, { payment: null }],
+      date: { $lt: cutoff }
+    }).lean()
+
+    if (!candidates || candidates.length === 0) return
+
+    for (const c of candidates) {
+      const fresh = await orderModel.findById(c._id).lean()
+      if (!fresh) { console.log(`[CLEANUP] already removed: ${c._id}`); continue }
+
+      console.log(`[CLEANUP] checking ${c._id} payment=${JSON.stringify(fresh.payment)} status=${String(fresh.status)} app_trans_id=${fresh.app_trans_id}`)
+
+      // quick local check for obvious paid markers
+      const paidValues = [true, 'true', 1, '1', 'paid', 'success']
+      const localPaid = paidValues.includes(fresh.payment) || paidValues.includes(String(fresh.status)) || String(fresh.payment) === '1' || String(fresh.status) === '1'
+      if (localPaid) {
+        console.log(`[CLEANUP] SKIP (local paid) ${c._id}`)
+        continue
+      }
+
+      let shouldDelete = false
+
+      if (fresh.app_trans_id) {
+        const zp = await queryZaloPay(fresh.app_trans_id)
+        if (!zp) {
+          // cannot confirm with ZaloPay — skip deletion to be safe
+          console.warn(`[CLEANUP] ZaloPay query returned null for ${c._id} — SKIP deletion`)
+          continue
+        }
+
+        const zpStatus = (zp.data && zp.data.status) ?? zp.trans_status ?? null
+
+        // If ZaloPay explicitly says "no transaction" (return_code === 3), treat as cancel -> delete
+        if (zp.return_code === 3) {
+          console.log(`[CLEANUP] ZaloPay query for ${c._id} returned no transaction (return_code=3) — will delete`)
+          shouldDelete = true
+        } else if (zp.return_code !== 1 || zpStatus === null) {
+          // other non-success responses (transient/unexpected) -> skip to be safe
+          console.warn(`[CLEANUP] ZaloPay query for ${c._id} returned no status (return_code=${zp.return_code}) — SKIP deletion`)
+          continue
+        }
+
+        // explicit success -> mark paid and skip
+        if (Number(zpStatus) === 1) {
+          console.log(`[CLEANUP] ZaloPay reports PAID for ${c._id} (zpStatus=${zpStatus}) — updating & skipping`)
+          await orderModel.findByIdAndUpdate(c._id, { payment: true, status: 'Đã đặt hàng' })
+          continue
+        }
+
+        // explicit failure/cancel codes (negative values like -49) -> allow deletion
+        if (Number(zpStatus) < 0) {
+          console.log(`[CLEANUP] ZaloPay reports FAILED for ${c._id} (zpStatus=${zpStatus}) — will delete`)
+          shouldDelete = true
+        } else if (!shouldDelete) {
+          console.warn(`[CLEANUP] ZaloPay returned non-success non-failure status for ${c._id} (zpStatus=${zpStatus}) — SKIP deletion`)
+          continue
+        }
+      } else {
+        // no app_trans_id: rely on DB fields only (delete only if still unpaid)
+        const latest = await orderModel.findById(c._id).lean()
+        if (!latest) { console.log(`[CLEANUP] already removed before final check: ${c._id}`); continue }
+        const latestPaid = paidValues.includes(latest.payment) || paidValues.includes(String(latest.status)) || String(latest.payment) === '1' || String(latest.status) === '1'
+        if (latestPaid) {
+          console.log(`[CLEANUP] SKIP (latest paid) ${c._id}`)
+          continue
+        }
+        // no external confirmation available — treat as cancellable (existing behavior)
+        shouldDelete = true
+      }
+
+      if (shouldDelete) {
+        try {
+          await orderModel.findByIdAndDelete(c._id)
+          console.log(`[CLEANUP] deleted unpaid/cancelled ZaloPay order ${c._id}`)
+        } catch (delErr) {
+          console.error(`[CLEANUP] failed to delete ${c._id}:`, delErr)
+        }
+      }
     }
-    
   } catch (error) {
-    console.log("Error cleaning up unpaid orders:", error);
+    console.error('Error cleaning up unpaid orders:', error)
   }
 };
 
-// Xóa ngay các đơn hàng ZaloPay cũ chưa thanh toán (để chạy ngay lập tức)
+// add a route-friendly wrapper so routes importing cleanupOldUnpaidOrders work
 const cleanupOldUnpaidOrders = async (req, res) => {
   try {
-    const tenMinutesAgo = Date.now() - (10 * 60 * 1000);
-    
-    const result = await orderModel.deleteMany({
-      paymentMethod: "ZaloPay",
-      payment: false,
-      date: { $lt: tenMinutesAgo }
-    });
-    
-    res.json({ 
-      success: true, 
-      message: `Đã xóa ${result.deletedCount} đơn hàng chưa thanh toán`,
-      deletedCount: result.deletedCount
-    });
-    
-  } catch (error) {
-    console.log(error);
-    res.json({ success: false, message: error.message });
+    await cleanupUnpaidOrders(); // call internal non-route cleanup
+    return res.json({ success: true, message: 'Cleanup triggered' });
+  } catch (err) {
+    console.error('cleanupOldUnpaidOrders handler error', err);
+    return res.status(500).json({ success: false, message: err.message });
   }
 };
 
-// Chạy cleanup mỗi 5 phút
-setInterval(cleanupUnpaidOrders, 5 * 60 * 1000);
+// run interval
+setInterval(cleanupUnpaidOrders, 1 * 60 * 1000);
 
-export { placeOrder, placeOrderZaloPay, allOrders, userOrders, updateStatus, zaloPayCallback, checkZaloPayStatus, cancelOrder, cleanupOldUnpaidOrders };
+export { placeOrder, placeOrderZaloPay, allOrders, userOrders, updateStatus, zaloPayCallback, checkZaloPayStatus, cleanupUnpaidOrders, cleanupOldUnpaidOrders };

@@ -5,6 +5,10 @@ import {
   removeProduct,
   singleProduct,
   editProduct,
+  updateProductStock,
+  checkStock,
+  reduceStock,
+  getLowStockProducts
 } from "../controllers/productController.js";
 import upload from "../middleware/multer.js";
 import adminAuth from "../middleware/adminAuth.js";
@@ -31,5 +35,9 @@ productRouter.post('/edit', adminAuth, upload.fields([
 ]), editProduct)
 productRouter.post("/single", singleProduct);
 productRouter.get("/list", listProduct);
+productRouter.post('/update-stock', adminAuth, updateProductStock);
+productRouter.post('/check-stock', checkStock);
+productRouter.post('/reduce-stock', adminAuth, reduceStock);
+productRouter.get('/low-stock', adminAuth, getLowStockProducts);
 
 export default productRouter;

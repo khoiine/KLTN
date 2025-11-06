@@ -31,7 +31,7 @@ const io = new Server(server, {
       process.env.FRONTEND_URL || 'http://localhost:5173',
       process.env.ADMIN_URL || 'http://localhost:5174'
     ],
-    methods: ['GET','POST'],
+    methods: ['GET', 'POST'],
     credentials: true
   }
 })
@@ -62,7 +62,7 @@ app.use(cors());
 app.use('/api/user', userRouter);
 app.use('/api/product', productRouter);
 app.use('/api/cart', cartRouter);
-app.use('/api/order',orderRouter)
+app.use('/api/order', orderRouter)
 app.use('/api/review', reviewRouter)
 app.use('/api/dashboard', dashboardRouter)
 app.use('/api/category', categoryRoutes);
@@ -70,8 +70,8 @@ app.use('/api/subcategory', subCategoryRouter)
 app.use('/api/chat', chatRouter);
 app.use('/api/blog', blogRouter);
 
-app.get('/',(req,res)=>{
-    res.send("API working");
+app.get('/', (req, res) => {
+  res.send("API working");
 });
 
 app.set('io', io)

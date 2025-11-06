@@ -57,78 +57,114 @@ const Cart = () => {
     }
   }, [cartItems, products]);
 
+  const validateStock = async () => {
+    try {
+      for (const item of cartData) {
+        const product = products.find(p => p._id === item._id)
+        const response = await axios.post(`${backendUrl}/api/product/check-stock`, {
+          productId: item._id,
+          size: item.size,
+          quantity: item.quantity
+        })
+
+        if (!response.data.success) {
+          toast.error(`${product.name} size ${item.size}: ${response.data.message}`)
+          return false
+        }
+      }
+      return true
+    } catch (error) {
+      console.log(error)
+      toast.error('Không thể kiểm tra tồn kho')
+      return false
+    }
+  }
+
+  const handleCheckout = async () => {
+    if (!token) {
+      toast.error('Vui lòng đăng nhập để thanh toán')
+      navigate('/login')
+      return
+    }
+
+    const isStockValid = await validateStock()
+    if (isStockValid) {
+      navigate('/place-order')
+    }
+  }
+
   return (
     <div className="border-t pt-14">
       <div className=" text-2xl mb-3">
         <Title text1={"Giỏ hàng"} text2={"của bạn"} />
       </div>
-
-
-
       <div>
-        {cartData.map((item, index) => {
-          const productData = products.find(
-            (product) => product._id === item._id
-          );
+        {
+          cartData.map((item, index) => {
 
-          return (
-            <div
-              key={index}
-              className="py-4 border-t border-b text-gray-700 grid grid-cols-[4fr_0.5fr_0.5fr] sm:grid-cols-[4fr_2fr_0.5fr] items-center gap-4"
-            >
-              <div className="flex items-start gap-6">
-                <img
-                  className="w-16 sm:w-20"
-                  src={productData.image[0]}
-                  alt=""
-                />
-                <div>
-                  <p className="text-sm sm:text-lg font-medium">
-                    {productData.name}
-                  </p>
-                  <div className="flex items-center gap-5 mt-2">
-                    <p>
-                      {formatVND(productData.price)}
-                    </p>
-                    <p className="px-2 sm:px-3 sm:py-1 border bg-slate-50 rounded-2xl">
-                      {item.size}
-                    </p>
+            const productData = products.find((product) => product._id === item._id);
+            const stock = productData?.stock?.get ? productData.stock.get(item.size) || 0 : 0
+
+            return (
+              <div
+                key={index}
+                className="py-4 border-t border-b text-gray-700 grid grid-cols-[4fr_0.5fr_0.5fr] sm:grid-cols-[4fr_2fr_0.5fr] items-center gap-4"
+              >
+                <div className="flex items-start gap-6">
+                  <img
+                    className="w-16 sm:w-20"
+                    src={productData.image[0]}
+                    alt=""
+                  />
+                  <div>
+                    <p className='text-xs sm:text-lg font-medium'>{productData.name}</p>
+                    <div className='flex items-center gap-5 mt-2'>
+                      <p>{formatVND(productData.price)}</p>
+                      <p className='px-2 sm:px-3 sm:py-1 border bg-slate-50'>{item.size}</p>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              {/* Nút tăng giảm số lượng sản phẩm */}
-              <div className='flex items-center border border-gray-300 w-max'>
-                <button
-                  onClick={() => updateQuantity(item._id, item.size, item.quantity - 1)}
-                  className='border-none text-xl font-bold px-3 py-1 bg-white-100 hover:bg-white-200 rounded'
-                >
-                  -
-                </button>
-                <input
-                  onChange={(e) => e.target.value === '' || e.target.value === '0' ? null : updateQuantity(item._id, item.size, Number(e.target.value))}
-                  className='border-none text-l max-w-16 text-center px-2 py-1 rounded'
-                  type="numeric"
-                  readOnly
-                  min={1}
-                  value={item.quantity} />
-                <button
-                  onClick={() => updateQuantity(item._id, item.size, item.quantity + 1)}
-                  className='border-none text-xl font-bold px-3 py-1 bg-white-100 hover:bg-white-200 rounded'
-                >
-                  +
-                </button>
-              </div>
+                {/* Nút tăng giảm số lượng sản phẩm */}
+                <div className='flex items-center border border-gray-300 w-max'>
+                  <button
+                    onClick={() => updateQuantity(item._id, item.size, item.quantity - 1)}
+                    className='border-none text-xl font-bold px-3 py-1 bg-white-100 hover:bg-white-200 rounded'
+                  >
+                    -
+                  </button>
 
-              <img
-                onClick={() => updateQuantity(item._id, item.size, 0)}
-                className="w-4 mr-4 sm:w-5 cursor-pointer"
-                src={assets.bin_icon}
-                alt=""
-              />
-            </div>
-          );
-        })}
+                  <input
+                    onChange={(e) => {
+                      const newQty = Number(e.target.value)
+                      if (newQty > stock) {
+                        toast.error(`Chỉ còn ${stock} sản phẩm`)
+                        return
+                      }; e.target.value === '' || e.target.value === '0' ? null : updateQuantity(item._id, item.size, newQty)
+                    }}
+                    className='border-none text-l max-w-16 text-center px-2 py-1 rounded'
+                    type="numeric"
+                    readOnly
+                    min={1}
+                    max={stock}
+                    value={item.quantity} />
+                  <button
+                    onClick={() => updateQuantity(item._id, item.size, item.quantity + 1)}
+                    className='border-none text-xl font-bold px-3 py-1 bg-white-100 hover:bg-white-200 rounded'
+                  >
+                    +
+                  </button>
+                </div>
+
+                <img
+                  onClick={() => updateQuantity(item._id, item.size, 0)}
+                  className="w-4 mr-4 sm:w-5 cursor-pointer"
+                  src={assets.bin_icon}
+                  alt=""
+                />
+              </div>
+            );
+          })}
       </div>
       {getCartCount() > 0 && (
         <div className="flex justify-end my-20">

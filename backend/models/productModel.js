@@ -36,6 +36,16 @@ const productSchema = new mongoose.Schema({
     type: Number,
     required: true,
   },
+  // Theo dõi tồn kho
+  stock: {
+    type: Map,
+    of: Number,
+    default: {}
+  },
+  // Kiểm tra sản phẩm còn hàng hay không
+  isAvailable: { 
+    type: Boolean, default: true 
+  },
 });
 
 const productModel = mongoose.models.product || mongoose.model("product", productSchema);

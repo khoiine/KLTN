@@ -39,7 +39,7 @@ const Login = () => {
           // Kiểm tra nếu là admin
           if (response.data.isAdmin) {
             setIsAdmin(true)
-            toast.success('Đăng nhập admin thành công!')
+            window.location.href = 'http://localhost:5174'
           } else {
             setIsAdmin(false)
             toast.success('Đăng nhập thành công!')

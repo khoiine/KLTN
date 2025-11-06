@@ -2,240 +2,153 @@ import { useContext, useEffect, useState } from 'react'
 import { ShopContext } from '../context/ShopContext'
 import { toast } from 'react-toastify'
 import axios from 'axios'
+import { assets } from '../assets/assets'
 
-const ReviewSection = ({ productId }) => {
-    const { token, backendUrl, userInfo, isAdmin } = useContext(ShopContext)
+const ReviewSection = ({ productId, onReviewAdded }) => {
+    const { backendUrl, token, userInfo } = useContext(ShopContext)
     const [reviews, setReviews] = useState([])
-    const [userReview, setUserReview] = useState(null)
-    const [showReviewForm, setShowReviewForm] = useState(false)
-    const [newReview, setNewReview] = useState({
-        rating: 5,
-        comment: ''
-    })
+    const [rating, setRating] = useState(5)
+    const [comment, setComment] = useState('')
+    const [loading, setLoading] = useState(false)
 
-    // Fetch reviews for this product
+    useEffect(() => {
+        fetchReviews()
+    }, [productId])
+
     const fetchReviews = async () => {
         try {
             const response = await axios.get(`${backendUrl}/api/review/product/${productId}`)
             if (response.data.success) {
                 setReviews(response.data.reviews)
-                
-                // Check if current user has already reviewed this product
-                if (userInfo && token) {
-                    const existingReview = response.data.reviews.find(review => review.userId === userInfo._id)
-                    setUserReview(existingReview)
-                }
             }
         } catch (error) {
-            console.log('Error fetching reviews:', error)
+            console.log(error)
         }
     }
 
-    // Submit new review
-    const submitReview = async () => {
+    const handleSubmitReview = async (e) => {
+        e.preventDefault()
+
         if (!token) {
-            toast.error('Bạn cần đăng nhập để đánh giá sản phẩm')
-            return
-        }
-
-        if (!newReview.comment.trim()) {
-            toast.error('Vui lòng nhập bình luận')
+            toast.error('Vui lòng đăng nhập để đánh giá')
             return
         }
 
         try {
-            const response = await axios.post(`${backendUrl}/api/review/add`, {
-                productId,
-                rating: newReview.rating,
-                comment: newReview.comment
-            }, {
-                headers: { token }
-            })
+            setLoading(true)
+            const response = await axios.post(
+                `${backendUrl}/api/review/add`,
+                {
+                    productId,
+                    rating,
+                    comment
+                },
+                { headers: { token } }
+            )
 
             if (response.data.success) {
-                toast.success('Đánh giá thành công!')
-                setShowReviewForm(false)
-                setNewReview({ rating: 5, comment: '' })
-                fetchReviews() // Reload reviews
+                toast.success('Đánh giá của bạn đã được gửi!')
+                setRating(5)
+                setComment('')
+                await fetchReviews()
+
+                // Call parent callback to refresh rating
+                if (onReviewAdded) {
+                    onReviewAdded()
+                }
             } else {
                 toast.error(response.data.message)
             }
         } catch (error) {
-            console.log('Error submitting review:', error)
-            toast.error('Có lỗi xảy ra khi gửi đánh giá')
+            console.log(error)
+            toast.error(error.message)
+        } finally {
+            setLoading(false)
         }
     }
 
-    // Delete review (for admin or own review)
-    const deleteReview = async (reviewId) => {
-        try {
-            const response = await axios.delete(`${backendUrl}/api/review/delete/${reviewId}`, {
-                headers: { token }
-            })
-
-            if (response.data.success) {
-                toast.success('Xóa đánh giá thành công')
-                fetchReviews() // Reload reviews
-            } else {
-                toast.error(response.data.message)
-            }
-        } catch (error) {
-            console.log('Error deleting review:', error)
-            toast.error('Có lỗi khi xóa đánh giá')
+    const renderStars = (count, isInteractive = false) => {
+        const stars = []
+        for (let i = 1; i <= 5; i++) {
+            stars.push(
+                <img
+                    key={i}
+                    src={i <= count ? assets.star_icon : assets.star_dull_icon}
+                    alt="star"
+                    className={`w-5 ${isInteractive ? 'cursor-pointer hover:scale-110 transition-transform' : ''}`}
+                    onClick={isInteractive ? () => setRating(i) : undefined}
+                />
+            )
         }
+        return stars
     }
-
-    // Format date
-    const formatDate = (dateString) => {
-        try {
-            if (!dateString) return 'Chưa xác định'
-            const date = new Date(dateString)
-            if (isNaN(date.getTime())) return 'Ngày không hợp lệ'
-            
-            const day = String(date.getDate()).padStart(2, '0')
-            const month = String(date.getMonth() + 1).padStart(2, '0')
-            const year = date.getFullYear()
-            return `${day}/${month}/${year}`
-        } catch {
-            return 'Ngày không hợp lệ'
-        }
-    }
-
-    // Check if user can delete review (admin or own review)
-    const canDeleteReview = (review) => {
-        if (!userInfo || !token) return false
-        return isAdmin || review.userId === userInfo._id
-    }
-
-    useEffect(() => {
-        if (productId) {
-            fetchReviews()
-        }
-    }, [productId, userInfo])
 
     return (
-        <div className='mt-10'>
-            <div className='flex justify-between items-center mb-6'>
-                <h3 className='text-lg font-semibold'>Đánh giá sản phẩm ({reviews.length})</h3>
-                
-                {/* Show review button only if user is logged in and hasn't reviewed yet */}
-                {token && userInfo && !userReview && (
-                    <button
-                        onClick={() => setShowReviewForm(!showReviewForm)}
-                        className='bg-black text-white px-4 py-2 text-sm rounded hover:bg-gray-800'
-                    >
-                        {showReviewForm ? 'Hủy' : 'Viết đánh giá'}
-                    </button>
-                )}
-            </div>
+        <div className='flex flex-col gap-6'>
+            {/* Add Review Form */}
+            {token && (
+                <form onSubmit={handleSubmitReview} className='bg-gray-50 p-6 rounded-lg'>
+                    <h3 className='text-lg font-semibold mb-4'>Viết đánh giá của bạn</h3>
 
-            {/* Review Form */}
-            {showReviewForm && (
-                <div className='bg-gray-50 p-4 rounded-lg mb-6'>
-                    <h4 className='font-medium mb-3'>Viết đánh giá của bạn</h4>
-                    
-                    {/* Rating */}
                     <div className='mb-4'>
-                        <label className='block text-sm font-medium mb-2'>Đánh giá:</label>
+                        <label className='block text-sm font-medium mb-2'>Đánh giá của bạn:</label>
                         <div className='flex gap-1'>
-                            {[1, 2, 3, 4, 5].map((star) => (
-                                <button
-                                    key={star}
-                                    onClick={() => setNewReview({ ...newReview, rating: star })}
-                                    className={`text-2xl ${
-                                        star <= newReview.rating ? 'text-yellow-500' : 'text-gray-300'
-                                    } hover:text-yellow-500`}
-                                >
-                                    ★
-                                </button>
-                            ))}
-                            <span className='ml-2 text-sm text-gray-600'>({newReview.rating}/5)</span>
+                            {renderStars(rating, true)}
                         </div>
                     </div>
 
-                    {/* Comment */}
                     <div className='mb-4'>
-                        <label className='block text-sm font-medium mb-2'>Bình luận:</label>
+                        <label className='block text-sm font-medium mb-2'>Nhận xét:</label>
                         <textarea
-                            value={newReview.comment}
-                            onChange={(e) => setNewReview({ ...newReview, comment: e.target.value })}
+                            value={comment}
+                            onChange={(e) => setComment(e.target.value)}
+                            className='w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500'
+                            rows="4"
                             placeholder='Chia sẻ trải nghiệm của bạn về sản phẩm...'
-                            className='w-full border border-gray-300 rounded px-3 py-2 h-24 resize-none'
                             required
                         />
                     </div>
 
-                    <div className='flex gap-2'>
-                        <button
-                            onClick={submitReview}
-                            className='bg-black text-white px-4 py-2 text-sm rounded hover:bg-gray-800'
-                        >
-                            Gửi đánh giá
-                        </button>
-                        <button
-                            onClick={() => {
-                                setShowReviewForm(false)
-                                setNewReview({ rating: 5, comment: '' })
-                            }}
-                            className='bg-gray-300 text-gray-700 px-4 py-2 text-sm rounded hover:bg-gray-400'
-                        >
-                            Hủy
-                        </button>
-                    </div>
-                </div>
+                    <button
+                        type='submit'
+                        disabled={loading}
+                        className='bg-black text-white px-6 py-2 rounded hover:bg-gray-800 disabled:bg-gray-400'
+                    >
+                        {loading ? 'Đang gửi...' : 'Gửi đánh giá'}
+                    </button>
+                </form>
             )}
 
             {/* Reviews List */}
-            <div className='space-y-4'>
+            <div className='flex flex-col gap-4'>
+                <h3 className='text-lg font-semibold'>
+                    Tất cả đánh giá ({reviews.length})
+                </h3>
+
                 {reviews.length === 0 ? (
-                    <div className='text-center py-8 text-gray-500'>
-                        <p>Chưa có đánh giá nào cho sản phẩm này.</p>
-                        {token && userInfo ? (
-                            <p className='mt-2'>Hãy là người đầu tiên đánh giá!</p>
-                        ) : (
-                            <p className='mt-2'>Đăng nhập để có thể đánh giá sản phẩm.</p>
-                        )}
-                    </div>
+                    <p className='text-gray-500 text-center py-8'>
+                        Chưa có đánh giá nào. Hãy là người đầu tiên đánh giá sản phẩm này!
+                    </p>
                 ) : (
                     reviews.map((review) => (
-                        <div key={review._id} className='border border-gray-200 rounded-lg p-4'>
-                            <div className='flex justify-between items-start mb-2'>
-                                <div>
-                                    <div className='flex items-center gap-2 mb-1'>
-                                        <span className='font-medium'>{review.userName}</span>
-                                        <div className='flex'>
-                                            {[1, 2, 3, 4, 5].map((star) => (
-                                                <span
-                                                    key={star}
-                                                    className={`text-sm ${
-                                                        star <= review.rating ? 'text-yellow-500' : 'text-gray-300'
-                                                    }`}
-                                                >
-                                                    ★
-                                                </span>
-                                            ))}
-                                        </div>
-                                        <span className='text-sm text-gray-500'>({review.rating}/5)</span>
-                                    </div>
-                                    <p className='text-sm text-gray-500'>{formatDate(review.createdAt)}</p>
+                        <div key={review._id} className='border-b pb-4 last:border-b-0'>
+                            <div className='flex items-center gap-3 mb-2'>
+                                <div className='w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center font-semibold'>
+                                    {review.userName.charAt(0).toUpperCase()}
                                 </div>
-                                
-                                {/* Delete button for admin or own review */}
-                                {canDeleteReview(review) && (
-                                    <button
-                                        onClick={() => {
-                                            if (window.confirm('Bạn có chắc chắn muốn xóa đánh giá này?')) {
-                                                deleteReview(review._id)
-                                            }
-                                        }}
-                                        className='text-red-500 hover:text-red-700 text-sm'
-                                    >
-                                        Xóa
-                                    </button>
-                                )}
+                                <div>
+                                    <p className='font-semibold'>{review.userName}</p>
+                                    <div className='flex items-center gap-2'>
+                                        <div className='flex gap-0.5'>
+                                            {renderStars(review.rating)}
+                                        </div>
+                                        <span className='text-xs text-gray-500'>
+                                            {new Date(review.createdAt).toLocaleDateString('vi-VN')}
+                                        </span>
+                                    </div>
+                                </div>
                             </div>
-                            
-                            <p className='text-gray-700'>{review.comment}</p>
+                            <p className='text-gray-700 ml-13'>{review.comment}</p>
                         </div>
                     ))
                 )}

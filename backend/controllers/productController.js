@@ -4,7 +4,7 @@ import productModel from '../models/productModel.js';
 //function for add product
 const addProduct = async (req, res) => {
     try {
-        const { name, description, price, category, subCategory, sizes, bestseller } = req.body;
+        const { name, description, price, category, subCategory, sizes, bestseller, stock } = req.body;
 
         const image1 = req.files.image1 && req.files.image1[0];
         const image2 = req.files.image2 && req.files.image2[0];
@@ -20,6 +20,17 @@ const addProduct = async (req, res) => {
             })
         )
 
+        const stockData = stock ? JSON.parse(stock) : {}
+        console.log('Received stock data:', stockData)
+
+        //Dữ liệu tồn kho
+        const stockMap = new Map()
+        Object.entries(stockData).forEach(([size, quantity]) => {
+            stockMap.set(size, Number(quantity))
+        })
+
+        console.log('Stock Map:', Array.from(stockMap.entries()))
+
         const productData = {
             name,
             description,
@@ -30,8 +41,10 @@ const addProduct = async (req, res) => {
             sizes: JSON.parse(sizes),
             image: imagesUrl,
             date: Date.now(),
+            stock: stockMap,
+            isAvailable: true
         }
-        console.log(productData);
+        console.log('Product data before save:', productData)
 
         const product = new productModel(productData);
         await product.save();
@@ -45,20 +58,189 @@ const addProduct = async (req, res) => {
     }
 }
 
-//function for list product
-const listProduct = async (req, res) => {
+// Update product stock
+const updateProductStock = async (req, res) => {
     try {
+        const { id, stock } = req.body
 
-        const products = await productModel.find({});
-        res.json({ success: true, products });
+        console.log('Updating stock for product:', id)
+        console.log('New stock data:', stock)
 
+        const product = await productModel.findById(id)
+        if (!product) {
+            return res.json({ success: false, message: "Product not found" })
+        }
+
+        // Create new Map from stock object
+        const stockMap = new Map()
+        Object.entries(stock).forEach(([size, quantity]) => {
+            stockMap.set(size, Number(quantity))
+        })
+
+        // Clear existing stock and set new values
+        product.stock = new Map(Object.entries(stock))
+
+        // Check if any size is available
+        const hasStock = Object.values(stock).some(qty => Number(qty) > 0)
+        product.isAvailable = hasStock
+
+        await product.save()
+
+        console.log('Stock updated successfully')
+
+        // Return formatted product
+        const productObj = product.toObject();
+        const stockObj = {};
+
+        if (productObj.stock instanceof Map) {
+            productObj.stock.forEach((value, key) => {
+                stockObj[key] = Number(value);
+            });
+        } else {
+            Object.entries(productObj.stock).forEach(([key, value]) => {
+                stockObj[key] = Number(value);
+            });
+        }
+
+        productObj.stock = stockObj;
+
+        res.json({ success: true, message: "Stock updated successfully", product: productObj })
     } catch (error) {
-        console.log(error);
-        res.json({ success: false, message: error.message });
+        console.log(error)
+        res.json({ success: false, message: error.message })
     }
 }
 
-//function for remove product
+// Kiểm tra tồn kho
+const checkStock = async (req, res) => {
+    try {
+        const { productId, size, quantity } = req.body
+
+        const product = await productModel.findById(productId)
+        if (!product) {
+            return res.json({ success: false, message: "Product not found" })
+        }
+
+        const availableStock = product.stock.get(size) || 0
+
+        if (availableStock < quantity) {
+            return res.json({
+                success: false,
+                message: `Chỉ còn ${availableStock} sản phẩm size ${size}`,
+                availableStock
+            })
+        }
+
+        res.json({ success: true, availableStock })
+    } catch (error) {
+        console.log(error)
+        res.json({ success: false, message: error.message })
+    }
+}
+
+// Giảm lượng hàng sau khi đặt hàng
+const reduceStock = async (req, res) => {
+    try {
+        for (const item of items) {
+            const product = await productModel.findById(item.productId)
+            if (!product) continue
+
+            const currentStock = product.stock.get(item.size) || 0
+            const newStock = Math.max(0, currentStock - item.quantity)
+            product.stock.set(item.size, newStock)
+                ``
+            // Check if any size still has stock
+            const stockValues = Array.from(product.stock.values())
+            const hasStock = stockValues.some(qty => qty > 0)
+            product.isAvailable = hasStock
+
+            await product.save()
+        }
+    } catch (error) {
+        console.log('Error reducing stock:', error)
+    }
+}
+
+// Lấy danh sách sản phẩm sắp hết hàng
+const getLowStockProducts = async (req, res) => {
+    try {
+        const products = await productModel.find()
+
+        const lowStockProducts = products.filter(product => {
+            if (!product.stock) return false
+            const stockValues = Array.from(product.stock.values())
+            return stockValues.some(qty => qty > 0 && qty <= 10)
+        })
+
+        // Format products
+        const formattedProducts = lowStockProducts.map(product => {
+            const productObj = product.toObject();
+
+            if (productObj.stock) {
+                const stockObj = {};
+
+                if (productObj.stock instanceof Map) {
+                    productObj.stock.forEach((value, key) => {
+                        stockObj[key] = Number(value);
+                    });
+                } else {
+                    Object.entries(productObj.stock).forEach(([key, value]) => {
+                        stockObj[key] = Number(value);
+                    });
+                }
+
+                productObj.stock = stockObj;
+            }
+
+            return productObj;
+        })
+
+        res.json({ success: true, products: formattedProducts })
+    } catch (error) {
+        console.log(error)
+        res.json({ success: false, message: error.message })
+    }
+}
+
+//List sản phẩm
+const listProduct = async (req, res) => {
+    try {
+        const products = await productModel.find({});
+
+        // Convert stock Map to plain object for each product
+        const formattedProducts = products.map(product => {
+            const productObj = product.toObject();
+
+            console.log('Raw product stock:', productObj.stock)
+
+            // Convert Map to plain object
+            if (productObj.stock && typeof productObj.stock === 'object') {
+                const stockObj = {};
+                if (productObj.stock instanceof Map) {
+                    productObj.stock.forEach((value, key) => {
+                        stockObj[key] = value;
+                    });
+                } else if (typeof productObj.stock === 'object') {
+                    // Already an object (from MongoDB)
+                    Object.entries(productObj.stock).forEach(([key, value]) => {
+                        stockObj[key] = Number(value)
+                    });
+                }
+                productObj.stock = stockObj;
+                console.log('Formatted stock:', stockObj)
+            }
+
+            return productObj;
+        });
+
+        res.json({ success: true, products: formattedProducts })
+    } catch (error) {
+        console.log(error)
+        res.json({ success: false, message: error.message })
+    }
+}
+
+//Xóa sản phẩm
 const removeProduct = async (req, res) => {
     try {
 
@@ -71,7 +253,7 @@ const removeProduct = async (req, res) => {
     }
 }
 
-//function for edit product
+//Sửa sản phẩm
 const editProduct = async (req, res) => {
     try {
         const { productId, name, description, price, category, subCategory, sizes, bestseller } = req.body;
@@ -127,15 +309,37 @@ const editProduct = async (req, res) => {
 //function for single product details
 const singleProduct = async (req, res) => {
     try {
+        const { productId } = req.body
+        const product = await productModel.findById(productId)
 
-        const { productId } = req.body;
-        const product = await productModel.findById(productId);
-        res.json({ success: true, product });
+        if (!product) {
+            return res.json({ success: false, message: "Product not found" })
+        }
 
+        const productObj = product.toObject();
+
+        // Convert Map to plain object
+        if (productObj.stock) {
+            const stockObj = {};
+
+            if (productObj.stock instanceof Map) {
+                productObj.stock.forEach((value, key) => {
+                    stockObj[key] = Number(value);
+                });
+            } else if (typeof productObj.stock === 'object') {
+                Object.entries(productObj.stock).forEach(([key, value]) => {
+                    stockObj[key] = Number(value);
+                });
+            }
+
+            productObj.stock = stockObj;
+        }
+
+        res.json({ success: true, product: productObj })
     } catch (error) {
-        console.log(error);
-        res.json({ success: false, message: error.message });
+        console.log(error)
+        res.json({ success: false, message: error.message })
     }
 }
 
-export { addProduct, listProduct, removeProduct, editProduct, singleProduct };
+export { addProduct, listProduct, removeProduct, editProduct, singleProduct, updateProductStock, checkStock, reduceStock, getLowStockProducts };
