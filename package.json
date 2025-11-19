@@ -4,7 +4,9 @@
     "axios": "^1.7.7",
     "crypto-js": "^4.2.0",
     "jwt-decode": "^4.0.0",
+    "openai": "^6.8.1",
     "socket.io": "^4.8.1",
-    "socket.io-client": "^4.8.1"
+    "socket.io-client": "^4.8.1",
+    "tailwind-scrollbar": "^4.0.2"
   }
 }

@@ -82,7 +82,7 @@ const Cart = () => {
 
   const handleCheckout = async () => {
     if (!token) {
-      toast.error('Vui lòng đăng nhập để thanh toán')
+      toast.error('Vui lòng đăng nhập để thanh toán ')
       navigate('/login')
       return
     }

@@ -36,6 +36,11 @@ const Sidebar = () => {
                     <p className='hidden md:block'>Quản lý sản phẩm</p>
                 </NavLink>
 
+                <NavLink className='flex items-center gap-3 border border-gray-300 border-r-0 px-3 py-2 rounded-l' to="/stock">
+                    <img className='w-5 h-5' src={assets.order_icon} alt='' />
+                    <p className='hidden md:block'>Quản lý kho</p>
+                </NavLink>
+
                 <NavLink className='flex items-center gap-3 border border-gray-300 border-r-0 px-3 py-2 rounded-l' to="/categories">
                     <img className='w-5 h-5' src={assets.order_icon} alt='' />
                     <p className='hidden md:block'>Quản lý danh mục</p>
@@ -44,11 +49,6 @@ const Sidebar = () => {
                 <NavLink className='flex items-center gap-3 border border-gray-300 border-r-0 px-3 py-2 rounded-l' to="/subcategories">
                     <img className='w-5 h-5' src={assets.order_icon} alt='' />
                     <p className='hidden md:block'>Quản lý loại sản phẩm</p>
-                </NavLink>
-
-                <NavLink className='flex items-center gap-3 border border-gray-300 border-r-0 px-3 py-2 rounded-l' to="/stock">
-                    <img className='w-5 h-5' src={assets.order_icon} alt='' />
-                    <p className='hidden md:block'>Quản lý kho</p>
                 </NavLink>
 
                 <NavLink className='flex items-center gap-3 border border-gray-300 border-r-0 px-3 py-2 rounded-l' to="/users">
@@ -69,6 +69,11 @@ const Sidebar = () => {
                 <NavLink className='flex items-center gap-3 border border-gray-300 border-r-0 px-3 py-2 rounded-l' to="/blogs">
                     <img className='w-5 h-5' src={assets.order_icon} alt='' />
                     <p className='hidden md:block'>Quản lý tin tức</p>
+                </NavLink>
+
+                <NavLink className='flex items-center gap-3 border border-gray-300 border-r-0 px-3 py-2 rounded-l' to="/vouchers">
+                    <img className='w-5 h-5' src={assets.order_icon} alt='' />
+                    <p className='hidden md:block'>Quản lý Voucher</p>
                 </NavLink>
             </div>
         </div>

@@ -9,6 +9,7 @@ const Orders = ({ token, backendUrl }) => {
 
     const [orders, setOrders] = useState([])
     const [confirmingOrderId, setConfirmingOrderId] = useState(null)
+    const [deletingOrderId, setDeletingOrderId] = useState(null)
 
     // 🧭 Fetch tất cả đơn hàng
     const fetchAllOrders = useCallback(async () => {
@@ -57,6 +58,28 @@ const Orders = ({ token, backendUrl }) => {
             console.error('statusHandler error', err)
             toast.error(err?.response?.data?.message || err.message || 'Network error')
             setOrders(orders.map(order => order._id === orderId ? { ...order, status: order.status } : order))
+        }
+    }
+
+    // ❌ Xóa đơn hàng
+    const handleDelete = async (orderId) => {
+        if (!orderId) return
+        if (!window.confirm('Bạn có chắc muốn xóa đơn hàng này?')) return
+
+        try {
+            setDeletingOrderId(orderId)
+            const res = await axios.post(`${apiBase}/api/order/delete`, { orderId }, { headers: { token } })
+            if (res.data?.success) {
+                setOrders(prev => prev.filter(o => o._id !== orderId))
+                toast.success('Đã xóa đơn hàng')
+            } else {
+                toast.error(res.data?.message || 'Xóa đơn hàng thất bại')
+            }
+        } catch (err) {
+            console.error('delete order error', err)
+            toast.error(err?.response?.data?.message || err.message || 'Network error')
+        } finally {
+            setDeletingOrderId(null)
         }
     }
 
@@ -120,7 +143,7 @@ const Orders = ({ token, backendUrl }) => {
                                 <button
                                     onClick={() => handleConfirm(order._id)}
                                     disabled={confirmingOrderId === order._id}
-                                    className="px-3 py-1 bg-blue-600 text-white rounded"
+                                    className="px-4 py-2 bg-blue-600 text-white rounded"
                                 >
                                     {confirmingOrderId === order._id ? 'Đang xác nhận...' : 'Xác nhận (Đặt hàng)'}
                                 </button>
@@ -137,6 +160,13 @@ const Orders = ({ token, backendUrl }) => {
                                     <option value="Hoàn tất">Hoàn tất</option>
                                 </select>
                             )}
+                            <button
+                                onClick={() => handleDelete(order._id)}
+                                disabled={deletingOrderId === order._id}
+                                className="px-4 py-2 bg-red-600 text-white rounded"
+                            >
+                                {deletingOrderId === order._id ? 'Đang xóa...' : 'Xóa'}
+                            </button>
                         </div>
                     </div>
                 ))

@@ -138,7 +138,7 @@ const StockManagement = ({ token }) => {
                                         <span className='font-bold'>{totalStock}</span>
                                     </td>
                                     <td className='p-4'>
-                                        <span className={`px-3 py-1 rounded text-sm ${getStockColor(stockLevel)}`}>
+                                        <span className={`p-[8%] rounded text-sm ${getStockColor(stockLevel)}`}>
                                             {stockLevel === 'out-of-stock' && 'Hết hàng'}
                                             {stockLevel === 'low-stock' && 'Sắp hết'}
                                             {stockLevel === 'in-stock' && 'Còn hàng'}
@@ -147,7 +147,7 @@ const StockManagement = ({ token }) => {
                                     <td className='p-4'>
                                         <button
                                             onClick={() => handleEditStock(product)}
-                                            className='text-blue-600 hover:underline'
+                                            className='p-[9%] bg-blue-600 text-white rounded'
                                         >
                                             Cập nhật
                                         </button>

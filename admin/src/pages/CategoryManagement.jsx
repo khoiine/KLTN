@@ -161,14 +161,14 @@ const CategoryManagement = ({ token }) => {
                                 <button
                                     onClick={() => handleEdit(category)}
                                     disabled={loading}
-                                    className='text-blue-500 hover:text-blue-700 px-3 py-1 rounded border border-blue-500 hover:bg-blue-50'
+                                    className='px-4 py-2 bg-blue-600 text-white rounded'
                                 >
                                     Sửa
                                 </button>
                                 <button
                                     onClick={() => handleDelete(category._id)}
                                     disabled={loading}
-                                    className='text-red-500 hover:text-red-700 px-3 py-1 rounded border border-red-500 hover:bg-red-50'
+                                    className='px-4 py-2 bg-red-600 text-white rounded'
                                 >
                                     Xóa
                                 </button>

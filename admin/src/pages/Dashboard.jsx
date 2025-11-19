@@ -31,6 +31,8 @@ const Dashboard = ({ token }) => {
         totalOrders: 0,
         totalUsers: 0,
         totalBlogs: 0,
+        totalReviews: 0,
+        totalVouchers: 0,
         recentOrders: [],
         ratingStats: {
             5: 0,
@@ -151,6 +153,16 @@ const Dashboard = ({ token }) => {
                 <div className='bg-purple-50 p-6 rounded-lg border border-purple-200'>
                     <h3 className='text-lg font-medium text-purple-800'>Tổng tin tức</h3>
                     <p className='text-3xl font-bold text-purple-600'>{dashboardData.totalBlogs}</p>
+                </div>
+
+                <div className='bg-blue-50 p-6 rounded-lg border border-blue-200'>
+                    <h3 className='text-lg font-medium text-blue-800'>Tổng đánh giá</h3>
+                    <p className='text-3xl font-bold text-blue-600'>{dashboardData.totalReviews}</p>
+                </div>
+
+                <div className='bg-green-50 p-6 rounded-lg border border-green-200'>
+                    <h3 className='text-lg font-medium text-green-800'>Tổng voucher</h3>
+                    <p className='text-3xl font-bold text-green-600'>{dashboardData.totalVouchers}</p>
                 </div>
             </div>
 

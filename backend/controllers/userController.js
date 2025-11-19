@@ -16,13 +16,13 @@ const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID)
 const googleLogin = async (req, res) => {
     try {
         const { credential } = req.body
-        
+
         // Verify Google token
         const ticket = await client.verifyIdToken({
             idToken: credential,
             audience: process.env.GOOGLE_CLIENT_ID
         })
-        
+
         const payload = ticket.getPayload()
         const { email, name, sub: googleId, picture } = payload
 
@@ -55,9 +55,9 @@ const googleLogin = async (req, res) => {
         // Tạo token
         const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET)
 
-        res.json({ 
-            success: true, 
-            token, 
+        res.json({
+            success: true,
+            token,
             isAdmin,
             message: 'Đăng nhập Google thành công'
         })
@@ -117,7 +117,7 @@ const loginUser = async (req, res) => {
 const registerUser = async (req, res) => {
 
     try {
-        const { name, email, password } = req.body;
+        const { name, email, password, phone, address, city, district, ward } = req.body;
 
         //checking user already exists or not
         const exists = await userModel.findOne({ email });
@@ -140,7 +140,12 @@ const registerUser = async (req, res) => {
         const newUser = new userModel({
             name,
             email,
-            password: hashedPassword
+            password: hashedPassword,
+            phone: phone || '',
+            address: address || '',
+            city: city || '',
+            district: district || '',
+            ward: ward || ''
         });
 
         const user = await newUser.save();
@@ -229,32 +234,29 @@ const getUserInfo = async (req, res) => {
 // Route to update user profile
 const updateProfile = async (req, res) => {
     try {
-        const { userId } = req.body;
-        const { name, phone, address, city, district, ward } = req.body;
+        const { userId, name, phone, address, city, district, ward } = req.body;
 
-        // Find user by ID
+        if (!userId) return res.json({ success: false, message: "Thiếu userId" });
+
         const user = await userModel.findById(userId);
-        if (!user) {
-            return res.json({ success: false, message: "User not found" });
-        }
+        if (!user) return res.json({ success: false, message: "User not found" });
 
-        // Update user profile
-        await userModel.findByIdAndUpdate(userId, {
-            name,
-            phone,
-            address,
-            city,
-            district,
-            ward
-        });
+        const updateData = {};
+        if (name) updateData.name = name;
+        if (phone) updateData.phone = phone;
+        if (address) updateData.address = address;
+        if (city) updateData.city = city;
+        if (district) updateData.district = district;
+        if (ward) updateData.ward = ward;
 
-        res.json({ success: true, message: "Profile updated successfully" });
-
+        const updatedUser = await userModel.findByIdAndUpdate(userId, updateData, { new: true });
+        res.json({ success: true, message: "Profile updated successfully", user: updatedUser });
     } catch (error) {
         console.log(error);
         res.json({ success: false, message: error.message });
     }
-}
+};
+
 
 // Get all users (admin only)
 const getAllUsers = async (req, res) => {
@@ -292,7 +294,7 @@ const forgotPassword = async (req, res) => {
         const mailOptions = {
             from: process.env.EMAIL_USER,
             to: email,
-            subject: 'Đặt lại mật khẩu - E-Commerce Shop',
+            subject: 'Đặt lại mật khẩu - LKFashionStore',
             html: `
                 <div style="font-family: Arial, sans-serif; padding: 20px;">
                     <h2>Yêu cầu đặt lại mật khẩu</h2>
@@ -385,4 +387,93 @@ const changePassword = async (req, res) => {
     }
 };
 
-export { loginUser, registerUser, adminLogin, getUserInfo, updateProfile, getAllUsers, forgotPassword, resetPassword, changePassword , googleLogin }
+// List all users
+const listUsers = async (req, res) => {
+    try {
+        const users = await userModel.find().select('-__v').lean()
+        return res.json({ success: true, users })
+    } catch (err) {
+        console.error('listUsers error', err)
+        return res.status(500).json({ success: false, message: err.message })
+    }
+}
+
+// Get single user
+const getUser = async (req, res) => {
+    try {
+        const id = req.params.id
+        if (!id) return res.status(400).json({ success: false, message: 'id required' })
+        const user = await userModel.findById(id).select('-__v').lean()
+        if (!user) return res.status(404).json({ success: false, message: 'User not found' })
+        return res.json({ success: true, user })
+    } catch (err) {
+        console.error('getUser error', err)
+        return res.status(500).json({ success: false, message: err.message })
+    }
+}
+
+// Register / create user (admin)
+const registerUserAdmin = async (req, res) => {
+    try {
+        const { name, email, phone, password, address, city, district, ward } = req.body
+        if (!email || !password) return res.status(400).json({ success: false, message: 'email and password required' })
+
+        const exists = await userModel.findOne({ email })
+        if (exists) return res.status(400).json({ success: false, message: 'Email already taken' })
+
+        const hashed = await bcrypt.hash(password, 10)
+        const newUser = new userModel({
+            name, email, phone, password: hashed, address, city, district, ward
+        })
+        await newUser.save()
+        return res.json({ success: true, message: 'User created', user: { _id: newUser._id, email: newUser.email, name: newUser.name } })
+    } catch (err) {
+        console.error('registerUser error', err)
+        return res.status(500).json({ success: false, message: err.message })
+    }
+}
+
+// Update user
+const updateUser = async (req, res) => {
+    try {
+        const { userId, name, email, phone, password, address, city, district, ward } = req.body
+        if (!userId) return res.status(400).json({ success: false, message: 'userId required' })
+
+        const update = {}
+        if (name !== undefined) update.name = name
+        if (email !== undefined) update.email = email
+        if (phone !== undefined) update.phone = phone
+        if (address !== undefined) update.address = address
+        if (city !== undefined) update.city = city
+        if (district !== undefined) update.district = district
+        if (ward !== undefined) update.ward = ward
+        if (password) update.password = await bcrypt.hash(password, 10)
+
+        const user = await userModel.findByIdAndUpdate(userId, update, { new: true }).select('-__v')
+        if (!user) return res.status(404).json({ success: false, message: 'User not found' })
+        return res.json({ success: true, message: 'User updated', user })
+    } catch (err) {
+        console.error('updateUser error', err)
+        return res.status(500).json({ success: false, message: err.message })
+    }
+}
+
+// Delete user
+const deleteUser = async (req, res) => {
+    try {
+        const { userId } = req.body
+        if (!userId) return res.status(400).json({ success: false, message: 'userId required' })
+
+        const user = await userModel.findById(userId)
+        if (!user) return res.status(404).json({ success: false, message: 'User not found' })
+
+        await userModel.findByIdAndDelete(userId)
+        console.log(`[USER] deleted ${userId}`)
+        return res.json({ success: true, message: 'User deleted' })
+    } catch (err) {
+        console.error('deleteUser error', err)
+        return res.status(500).json({ success: false, message: err.message })
+    }
+}
+
+export { loginUser, registerUser, adminLogin, getUserInfo, updateProfile, getAllUsers, forgotPassword, resetPassword, changePassword, googleLogin, listUsers, getUser, registerUserAdmin, updateUser, deleteUser }

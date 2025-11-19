@@ -1,109 +1,112 @@
-import { useContext, useEffect, useState } from 'react'
-import { useSearchParams, useNavigate } from 'react-router-dom'
-import { ShopContext } from '../context/ShopContext'
-import axios from 'axios'
-import { toast } from 'react-toastify'
+import { useContext, useEffect, useState, useRef } from 'react';
+import { useSearchParams, useNavigate } from 'react-router-dom';
+import { ShopContext } from '../context/ShopContext';
+import axios from 'axios';
+import { toast } from 'react-toastify';
 
 const PaymentResult = () => {
-  const [searchParams] = useSearchParams()
-  const navigate = useNavigate()
-  const { backendUrl, token, refreshCart } = useContext(ShopContext)
-  const [isChecking, setIsChecking] = useState(true)
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const { backendUrl, token, refreshCart } = useContext(ShopContext);
+  const [isChecking, setIsChecking] = useState(true);
+  const isMounted = useRef(true);
+
+  useEffect(() => {
+    return () => { isMounted.current = false; }
+  }, []);
 
   useEffect(() => {
     const handlePaymentResult = async () => {
       try {
-        const orderId = searchParams.get('orderid')
-        const status = searchParams.get('status') // ZaloPay trả về status trong URL
-        const appTransId = searchParams.get('apptransid')
-        
-        console.log('Payment result params:', { orderId, status, appTransId })
-        
+        const orderId = searchParams.get('orderid');
+        const status = searchParams.get('status'); // ZaloPay trả về status trong URL
+        const appTransId = searchParams.get('apptransid');
+
         if (!orderId) {
-          toast.error('Không tìm thấy thông tin đơn hàng')
-          navigate('/cart')
-          return
+          toast.error('Không tìm thấy thông tin đơn hàng');
+          navigate('/cart');
+          return;
         }
 
-        // Kiểm tra trạng thái từ URL parameters trước
+        // Kiểm tra status trong URL trước
         if (status) {
           if (status === '1') {
-            // Thanh toán thành công - backend đã xóa giỏ hàng, chỉ cần refresh
-            await refreshCart()
-            toast.success('Thanh toán thành công!')
-            navigate('/orders')
-            return
+            // Thanh toán thành công
+            await refreshCart();
+            if (!isMounted.current) return;
+            toast.success('Thanh toán thành công!');
+            navigate('/orders');
+            return;
           } else {
-            // Thanh toán thất bại hoặc hủy
-            toast.error('Thanh toán thất bại hoặc đã bị hủy!')
-            navigate('/cart')
-            return
+            // Hủy hoặc thất bại
+            toast.error('Thanh toán thất bại hoặc đã hủy!');
+            navigate('/cart');
+            return;
           }
         }
 
-        // Nếu không có status trong URL, kiểm tra với ZaloPay API
+        // Nếu không có status trong URL, gọi backend kiểm tra ZaloPay
         if (appTransId) {
-          // Đợi một chút để callback có thể xử lý trước
-          setTimeout(async () => {
+          const checkZaloPayStatus = async () => {
             try {
               const response = await axios.post(
-                backendUrl + '/api/order/zalopay-status',
+                `${backendUrl}/api/order/zalopay-status`,
                 { app_trans_id: appTransId },
                 { headers: { token } }
-              )
+              );
 
-              console.log('Payment status check:', response.data)
+              console.log('ZaloPay status check:', response.data);
 
-              if (response.data.return_code === 1) {
-                // Thanh toán thành công - backend đã xóa giỏ hàng, chỉ cần refresh
-                await refreshCart()
-                toast.success('Thanh toán thành công!')
-                navigate('/orders')
+              if (status === '1') {
+                // Thanh toán thành công -> backend đã xóa cart
+                await refreshCart();
+                if (!isMounted.current) return;
+                toast.success('Thanh toán thành công!');
+                navigate('/orders');
               } else if (response.data.return_code === 2) {
-                // Đang xử lý - kiểm tra lại sau 3 giây
-                toast.info('Đang xử lý thanh toán...')
-                setTimeout(handlePaymentResult, 3000)
-                return
+                // Đang xử lý -> poll lại sau 3s
+                setTimeout(() => { if (isMounted.current) checkZaloPayStatus(); }, 3000);
               } else {
-                // Thanh toán thất bại - hủy đơn hàng nếu cần
+                // Thất bại hoặc hủy -> chỉ xóa order, không xóa cart
                 try {
                   await axios.post(
-                    backendUrl + '/api/order/cancel',
-                    { orderId: orderId },
+                    `${backendUrl}/api/order/cancel`,
+                    { orderId },
                     { headers: { token } }
-                  )
+                  );
                 } catch (cancelError) {
-                  console.log('Error cancelling order:', cancelError)
+                  console.log('Error cancelling order:', cancelError);
                 }
-                
-                toast.error('Thanh toán thất bại!')
-                navigate('/cart')
+                toast.error('Thanh toán thất bại hoặc đã hủy!');
+                navigate('/cart');
               }
             } catch (error) {
-              console.log('Error checking payment status:', error)
-              toast.error('Không thể kiểm tra trạng thái thanh toán')
-              navigate('/cart')
+              console.log('Error checking payment status:', error);
+              toast.error('Không thể kiểm tra trạng thái thanh toán');
+              navigate('/cart');
             } finally {
-              setIsChecking(false)
+              if (isMounted.current) setIsChecking(false);
             }
-          }, 2000) // Đợi 2 giây để callback xử lý
-        } else {
-          // Không có thông tin gì - có thể người dùng hủy
-          toast.error('Không có thông tin thanh toán')
-          navigate('/cart')
-          setIsChecking(false)
-        }
-        
-      } catch (error) {
-        console.log('Payment result error:', error)
-        toast.error('Có lỗi xảy ra khi xử lý kết quả thanh toán')
-        navigate('/cart')
-        setIsChecking(false)
-      }
-    }
+          };
 
-    handlePaymentResult()
-  }, [searchParams, backendUrl, token, navigate, refreshCart])
+          checkZaloPayStatus();
+        } else {
+          // Không có thông tin thanh toán
+          toast.error('Không có thông tin thanh toán');
+          navigate('/cart');
+          setIsChecking(false);
+        }
+
+      } catch (error) {
+        console.log('Payment result error:', error);
+        toast.error('Có lỗi xảy ra khi xử lý kết quả thanh toán');
+        navigate('/cart');
+        setIsChecking(false);
+      }
+    };
+
+    handlePaymentResult();
+  }, [searchParams, backendUrl, token, navigate, refreshCart]);
 
   if (isChecking) {
     return (
@@ -113,7 +116,7 @@ const PaymentResult = () => {
           <p className="text-lg">Đang kiểm tra trạng thái thanh toán...</p>
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -122,7 +125,7 @@ const PaymentResult = () => {
         <p className="text-lg">Đang xử lý kết quả thanh toán...</p>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default PaymentResult
+export default PaymentResult;

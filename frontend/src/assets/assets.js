@@ -20,6 +20,8 @@ import paypal_logo from "./paypal_logo.png";
 import visa_logo from "./visa_logo.png";
 import cross_icon from "./cross_icon.png";
 import messenger_icon from "./messenger_icon.png"
+import zalopay_logo from "./zalopay_logo.png"
+import cash_logo from "./cash_logo.png"
 
 export const assets = {
   logo,
@@ -44,4 +46,6 @@ export const assets = {
   stripe_logo,
   cross_icon,
   messenger_icon,
+  zalopay_logo,
+  cash_logo,
 };

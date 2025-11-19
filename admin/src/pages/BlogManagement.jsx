@@ -203,26 +203,26 @@ const BlogManagement = ({ token }) => {
                                 </td>
                                 <td className='p-4'>{blog.category}</td>
                                 <td className='p-4'>
-                                    <span className={`px-3 py-1 rounded text-sm ${
+                                    <span className={`p-1 rounded text-sm ${
                                         blog.status === 'published' 
                                             ? 'bg-green-100 text-green-800' 
                                             : 'bg-gray-100 text-gray-800'
                                     }`}>
-                                        {blog.status === 'published' ? 'Đã xuất bản' : 'Ẩn bài'}
+                                        {blog.status === 'published' ? 'Xuất bản' : 'Ẩn bài'}
                                     </span>
                                 </td>
                                 <td className='p-4'>{blog.views}</td>
                                 <td className='p-4'>{new Date(blog.createdAt).toLocaleDateString('vi-VN')}</td>
-                                <td className='p-4'>
+                                <td className='p-4 flex gap-1 mt-5'>
                                     <button
                                         onClick={() => handleEdit(blog)}
-                                        className='text-blue-600 hover:underline mr-3'
+                                        className='px-4 py-2 bg-blue-600 text-white rounded'
                                     >
                                         Sửa
                                     </button>
                                     <button
                                         onClick={() => handleDelete(blog._id)}
-                                        className='text-red-600 hover:underline'
+                                        className='px-4 py-2 bg-red-600 text-white rounded'
                                     >
                                         Xóa
                                     </button>

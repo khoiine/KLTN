@@ -5,7 +5,7 @@ const Chatbot = () => {
   const [messages, setMessages] = useState([
     {
       id: 1,
-      text: "Xin chào! 👋\n\nTôi là trợ lý ảo của cửa hàng thời trang E-Commerce. Tôi có thể giúp bạn:\n\n• Tư vấn sản phẩm\n• Hướng dẫn đặt hàng\n• Thông tin giao hàng\n• Chính sách đổi trả\n• Khuyến mãi hiện tại\n\nBạn cần hỗ trợ gì hôm nay?",
+      text: "Xin chào! 👋\n\nTôi là trợ lý ảo của cửa hàng thời trang LKFashion Store. Tôi có thể giúp bạn:\n\n• Tư vấn sản phẩm\n• Hướng dẫn đặt hàng\n• Thông tin giao hàng\n• Chính sách đổi trả\n• Khuyến mãi hiện tại\n\nBạn cần hỗ trợ gì hôm nay?",
       isBot: true,
       timestamp: new Date()
     }
@@ -28,7 +28,7 @@ const Chatbot = () => {
     const message = userMessage.toLowerCase()
 
     if (message.includes('chào') || message.includes('hello') || message.includes('hi') || message.includes('xin chào')) {
-      return "Xin chào! Tôi là trợ lý ảo của cửa hàng E-Commerce. Bạn cần hỗ trợ gì không ạ?"
+      return "Xin chào! Tôi là trợ lý ảo của cửa hàng LKFashion Store. Bạn cần hỗ trợ gì không ạ?"
     }
 
     if (message.includes('sản phẩm') || message.includes('hàng hóa') || message.includes('shop')) {

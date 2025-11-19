@@ -165,72 +165,45 @@ const zaloPayCallback = async (req, res) => {
   try {
     const result = req.body;
 
-    // Xác thực callback
     const dataStr = result.data;
     const reqMac = result.mac;
-
     const mac = CryptoJS.HmacSHA256(dataStr, config.key2).toString();
 
     if (reqMac !== mac) {
-      // Callback không hợp lệ
-      return res.status(400).json({
-        return_code: -1,
-        return_message: "mac not equal"
-      });
+      return res.status(400).json({ return_code: -1, return_message: "mac not equal" });
     }
 
-    // Parse dữ liệu
     const dataJson = JSON.parse(dataStr);
     const embed_data = JSON.parse(dataJson.embed_data);
 
-    console.log("ZaloPay callback received:", {
-      app_trans_id: dataJson.app_trans_id,
-      amount: dataJson.amount,
-      orderId: embed_data.orderId,
-      status: dataJson.status // Kiểm tra status từ ZaloPay
-    });
-
-    // Normalize status to number and treat '1' or 1 as success
     const statusNum = Number(dataJson.status);
 
-    // CHỈ cập nhật đơn hàng khi status = 1 (thanh toán thành công)
     if (statusNum === 1) {
       const updatedOrder = await orderModel.findByIdAndUpdate(
         embed_data.orderId,
-        {
-          payment: true,
-          status: "Đã đặt hàng"
-        },
+        { payment: true, status: "Đã đặt hàng" },
         { new: true }
       );
 
       if (updatedOrder) {
-        console.log(`[ZaloPay] payment success — order updated: ${updatedOrder._id}, status=${updatedOrder.status}`);
-        // optional: clear user cart here if desired
+        // 🔥 XÓA GIỎ HÀNG NGAY TẠI BACKEND
+        await userModel.findByIdAndUpdate(updatedOrder.userId, { cartData: {} });
+
         return res.json({ return_code: 1, return_message: "success" });
-      } else {
-        console.log(`[ZaloPay] payment success but order not found: ${embed_data.orderId}`);
-        return res.json({ return_code: 0, return_message: "Order not found" });
       }
     } else {
-      // Nếu status khác 1 (thất bại hoặc hủy), xóa đơn hàng
-      console.log("Payment failed or cancelled, deleting order:", embed_data.orderId, "zaloStatus:", dataJson.status);
+      // Thanh toán thất bại hoặc hủy
       await orderModel.findByIdAndDelete(embed_data.orderId);
-
-      return res.json({
-        return_code: 1, // Vẫn trả về 1 để ZaloPay biết đã xử lý
-        return_message: "Order cancelled due to payment failure"
-      });
+      console.log(`[ZaloPay] payment failed/cancelled — order deleted: ${embed_data.orderId}`);
+      return res.json({ return_code: 1, return_message: "Order cancelled due to payment failure" });
     }
 
   } catch (error) {
     console.log("ZaloPay callback error:", error);
-    return res.json({
-      return_code: 0,
-      return_message: error.message
-    });
+    return res.json({ return_code: 0, return_message: error.message });
   }
 };
+
 
 //Kiểm tra trạng thái thanh toán ZaloPay
 const checkZaloPayStatus = async (req, res) => {
@@ -498,4 +471,33 @@ const cleanupOldUnpaidOrders = async (req, res) => {
 // run interval
 setInterval(cleanupUnpaidOrders, 1 * 60 * 1000);
 
-export { placeOrder, placeOrderZaloPay, allOrders, userOrders, updateStatus, zaloPayCallback, checkZaloPayStatus, cleanupUnpaidOrders, cleanupOldUnpaidOrders };
+// Delete order by ID
+const deleteOrder = async (req, res) => {
+  try {
+    const { orderId } = req.body;
+    if (!orderId) return res.status(400).json({ success: false, message: 'orderId required' });
+
+    const order = await orderModel.findById(orderId);
+    if (!order) return res.status(404).json({ success: false, message: 'Order not found' });
+
+    await orderModel.findByIdAndDelete(orderId);
+    console.log(`[ORDER] deleted order ${orderId}`);
+    return res.json({ success: true, message: 'Order deleted' });
+  } catch (err) {
+    console.error('deleteOrder error', err);
+    return res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+export {
+  placeOrder,
+  placeOrderZaloPay,
+  allOrders,
+  userOrders,
+  updateStatus,
+  zaloPayCallback,
+  checkZaloPayStatus,
+  cleanupUnpaidOrders,
+  cleanupOldUnpaidOrders,
+  deleteOrder
+};

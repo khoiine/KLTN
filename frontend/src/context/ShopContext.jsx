@@ -179,10 +179,17 @@ const ShopContextProvider = (props) => {
 
     // Hàm refresh giỏ hàng từ server
     const refreshCart = async () => {
-        if (token) {
-            await getUserCart(token);
+        try {
+            if (token) {
+                // Gọi backend để đồng bộ cart
+                await axios.post(`${backendUrl}/api/cart/clear`, {}, { headers: { token } });
+            }
+            setCartItems({}); // update state frontend
+        } catch (err) {
+            console.error('refreshCart error:', err);
         }
-    };
+    }
+
 
     // Fetch user info
     const fetchUserInfo = async () => {

@@ -7,6 +7,10 @@ a.active hr{
     display: block;   
 }
 
+html, body, #root {
+  height: 100%;
+}
+
 *{
     font-family: Noto Sans JP, sans-serif;
 }

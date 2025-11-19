@@ -3,6 +3,7 @@ import productModel from "../models/productModel.js";
 import userModel from "../models/userModel.js";
 import reviewModel from "../models/reviewModel.js";
 import blogModel from "../models/blogModel.js";
+import voucherModel from "../models/voucherModel.js";
 
 // Lấy thống kê tổng quan cho dashboard
 const getDashboardStats = async (req, res) => {
@@ -18,6 +19,12 @@ const getDashboardStats = async (req, res) => {
 
         // Tổng số bài viết
         const totalBlogs = await blogModel.countDocuments();
+
+        //Tổng số đánh giá
+        const totalReviews = await reviewModel.countDocuments();
+
+        //Tổng số voucher
+        const totalVouchers = await voucherModel.countDocuments();
         
         // Thống kê đánh giá theo sao
         const ratingStats = await reviewModel.aggregate([
@@ -87,6 +94,8 @@ const getDashboardStats = async (req, res) => {
             totalOrders,
             totalUsers,
             totalBlogs,
+            totalReviews,
+            totalVouchers,
             ratingStats: ratingStatsObj,
             categoryStats,
             recentOrders,

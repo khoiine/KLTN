@@ -9,6 +9,7 @@ import {
   checkZaloPayStatus,
   cancelOrder,
   cleanupOldUnpaidOrders,
+  deleteOrder,
 } from "../controllers/orderController.js";
 import adminAuth from "../middleware/adminAuth.js";
 import authUser from "../middleware/auth.js";
@@ -20,6 +21,7 @@ const orderRouter = express.Router();
 orderRouter.post("/list", adminAuth, allOrders);
 orderRouter.post("/status", adminAuth, updateStatus);
 orderRouter.post("/cleanup", adminAuth, cleanupOldUnpaidOrders); // API để xóa đơn hàng cũ
+orderRouter.post('/delete', adminAuth, deleteOrder);
 
 //Tính năng thanh toán
 orderRouter.post("/place", authUser, placeOrder);

@@ -5,6 +5,7 @@ import ProductItem from '../components/ProductItem';
 import { ShopContext } from '../context/ShopContext';
 import ReactPaginate from 'react-paginate';
 import axios from 'axios';
+import ScrollToTop from '../components/ScrollToTop';
 
 const Collection = () => {
   const { products, search, showSearch } = useContext(ShopContext);

@@ -18,6 +18,7 @@ import ChatManagement from './pages/ChatManagement'
 import AdminContextProvider from './context/AdminContext';
 import BlogManagement from './pages/BlogManagement'
 import StockManagement from './pages/StockManagement'
+import Vouchers from './pages/Vouchers'
 
 export const backendUrl = import.meta.env.VITE_BACKEND_URL
 
@@ -70,6 +71,7 @@ const App = () => {
                 <Route path='/chat' element={<ChatManagement token={token} />} />
                 <Route path='/blogs' element={<BlogManagement token={token} />} />
                 <Route path='/stock' element={<StockManagement token={token} />} />
+                <Route path='/vouchers' element={<Vouchers token={token} />} />
               </Routes>
             </div>
           </div>

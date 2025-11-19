@@ -16,6 +16,7 @@ import http from 'http';
 import { Server } from 'socket.io';
 import jwt from 'jsonwebtoken';
 import blogRouter from './routes/blogRoute.js';
+import voucherRoutes from './routes/voucherRoute.js';
 
 //App Config
 const app = express();
@@ -69,6 +70,7 @@ app.use('/api/category', categoryRoutes);
 app.use('/api/subcategory', subCategoryRouter)
 app.use('/api/chat', chatRouter);
 app.use('/api/blog', blogRouter);
+app.use('/api/voucher', voucherRoutes)
 
 app.get('/', (req, res) => {
   res.send("API working");

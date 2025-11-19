@@ -32,7 +32,7 @@ export const formatVND = (value) =>
 
 const App = () => {
   return (
-    <div className='px-4 sm:px-[5vw] md:px-[7vw] lg:px-[9vw]'>
+    <div id='app-root' className='px-4 sm:px-[5vw] md:px-[7vw] lg:px-[9vw] overflow-y-scroll h-[100%] scrollbar scrollbar-thumb-gray-400 scrollbar-track-gray-900'>
       <ToastContainer />
       <Navbar />
       <SearchBar />
