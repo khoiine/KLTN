@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import {
     Chart as ChartJS,
     CategoryScale,
@@ -44,6 +44,7 @@ const Dashboard = ({ token }) => {
         categoryStats: [],
         monthlyOrderStats: []
     })
+    const [allOrdersTotal, setAllOrdersTotal] = useState(null)
 
     const fetchDashboardData = async () => {
         try {
@@ -67,6 +68,29 @@ const Dashboard = ({ token }) => {
             fetchDashboardData()
         }
     }, [token])
+
+    // fetch all orders total as fallback (admin endpoint required)
+    useEffect(() => {
+        const fetchAllOrdersTotal = async () => {
+            if (!token) return
+            try {
+                // only call when dashboard stats produce zero revenue (fallback)
+                const mStats = dashboardData.monthlyOrderStats || []
+                const mSum = mStats.reduce((s, it) => s + Number(it.total || it.revenue || it.amount || 0), 0)
+                const recentSum = (dashboardData.recentOrders || []).reduce((s, o) => s + Number(o.amount || 0), 0)
+                if (mSum > 0 || recentSum > 0) return
+
+                const res = await axios.post(backendUrl + '/api/order/list-admin', {}, { headers: { token } })
+                if (res.data?.success && Array.isArray(res.data.orders)) {
+                    const total = res.data.orders.reduce((s, o) => s + Number(o.amount || 0), 0)
+                    setAllOrdersTotal(total)
+                }
+            } catch (err) {
+                console.warn('fetchAllOrdersTotal error', err?.message || err)
+            }
+        }
+        fetchAllOrdersTotal()
+    }, [token, dashboardData])
 
     // Mapping category tiếng Anh sang tiếng Việt
     const categoryMapping = {
@@ -129,12 +153,29 @@ const Dashboard = ({ token }) => {
         }
     }
 
+    // total revenue: prefer monthlyOrderStats if positive, otherwise sum recentOrders, otherwise fallback to allOrdersTotal
+    const totalRevenue = useMemo(() => {
+        const mStats = dashboardData.monthlyOrderStats || []
+        const mSum = mStats.reduce((sum, it) => sum + Number(it.total || it.revenue || it.amount || 0), 0)
+        if (mSum > 0) return mSum
+        const recentSum = (dashboardData.recentOrders || []).reduce((sum, o) => sum + Number(o.amount || 0), 0)
+        if (recentSum > 0) return recentSum
+        return allOrdersTotal || 0
+    }, [dashboardData, allOrdersTotal])
+
     return (
         <div>
             <h2 className='mb-6 text-xl font-semibold text-gray-700'>Dashboard - Dữ liệu trực quan</h2>
 
             {/* Cards thống kê */}
             <div className='grid grid-cols-1 md:grid-cols-3 gap-6 mb-8'>
+                <div className='bg-red-50 p-6 rounded-lg border border-red-200'>
+                    <h3 className='text-lg font-medium text-red-800'>Doanh thu</h3>
+                    <p className='text-3xl font-bold text-red-600'>
+                        {formatCurrency(totalRevenue)}
+                    </p>
+                </div>
+
                 <div className='bg-blue-50 p-6 rounded-lg border border-blue-200'>
                     <h3 className='text-lg font-medium text-blue-800'>Tổng sản phẩm</h3>
                     <p className='text-3xl font-bold text-blue-600'>{dashboardData.totalProducts}</p>
