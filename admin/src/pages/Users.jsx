@@ -41,7 +41,7 @@ const Users = ({ token }) => {
             }
         } catch (err) {
             console.error('fetchAllUsers error', err)
-            toast.error(err?.response?.data?.message || err.message || 'Network error')
+            toast.error(err?.response?.data?.message || err.message || 'Lỗi kết nối')
         } finally {
             setLoading(false)
         }
@@ -123,7 +123,7 @@ const Users = ({ token }) => {
             }
         } catch (err) {
             console.error('create user error', err)
-            toast.error(err?.response?.data?.message || err.message || 'Network error')
+            toast.error(err?.response?.data?.message || err.message || 'Lỗi kết nối')
         }
     }
 
@@ -141,7 +141,7 @@ const Users = ({ token }) => {
             }
         } catch (err) {
             console.error('update user error', err)
-            toast.error(err?.response?.data?.message || err.message || 'Network error')
+            toast.error(err?.response?.data?.message || err.message || 'Lỗi kết nối')
         }
     }
 
@@ -159,7 +159,7 @@ const Users = ({ token }) => {
             }
         } catch (err) {
             console.error('delete user error', err)
-            toast.error(err?.response?.data?.message || err.message || 'Network error')
+            toast.error(err?.response?.data?.message || err.message || 'Lỗi kết nối')
         }
     }
 

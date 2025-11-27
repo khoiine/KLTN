@@ -311,7 +311,7 @@ const PlaceOrder = () => {
 
 
         <div className='w-full text-end mt-8'>
-          <button onClick={() => window.reload} type='submit' className='bg-black text-white px-16 py-3 text-sm rounded-full'>Thanh toán</button>
+          <button onClick={() => window.reload} type='submit' className='bg-black text-white px-16 py-3 text-sm rounded-full'>Đặt hàng</button>
         </div>
       </div>
     </form>

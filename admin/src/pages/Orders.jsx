@@ -39,7 +39,7 @@ const Orders = ({ token, backendUrl }) => {
             }
         } catch (err) {
             console.error('confirm error', err)
-            toast.error(err?.response?.data?.message || err.message || 'Network error')
+            toast.error(err?.response?.data?.message || err.message || 'Lỗi kết nối')
         } finally {
             setConfirmingOrderId(null)
         }
@@ -56,7 +56,7 @@ const Orders = ({ token, backendUrl }) => {
             toast.success('Đã cập nhật trạng thái đơn hàng')
         } catch (err) {
             console.error('statusHandler error', err)
-            toast.error(err?.response?.data?.message || err.message || 'Network error')
+            toast.error(err?.response?.data?.message || err.message || 'Lỗi kết nối')
             setOrders(orders.map(order => order._id === orderId ? { ...order, status: order.status } : order))
         }
     }
@@ -77,7 +77,7 @@ const Orders = ({ token, backendUrl }) => {
             }
         } catch (err) {
             console.error('delete order error', err)
-            toast.error(err?.response?.data?.message || err.message || 'Network error')
+            toast.error(err?.response?.data?.message || err.message || 'Lỗi kết nối')
         } finally {
             setDeletingOrderId(null)
         }
