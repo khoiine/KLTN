@@ -138,7 +138,7 @@ const ChatManagement = ({ token }) => { // ✅ Must be a component function
                     { chatId },
                     { headers: { token } }
                 )
-                
+
                 // Update both sidebar count and chat list bold state
                 fetchUnreadCount()
                 fetchChats()
@@ -178,27 +178,6 @@ const ChatManagement = ({ token }) => { // ✅ Must be a component function
             toast.error(error.message)
         } finally {
             setLoading(false)
-        }
-    }
-
-    const handleCloseChat = async (chatId) => {
-        if (!window.confirm('Bạn có chắc chắn muốn đóng cuộc trò chuyện này?')) return
-
-        try {
-            const response = await axios.post(
-                `${backendUrl}/api/chat/close`,
-                { chatId },
-                { headers: { token } }
-            )
-
-            if (response.data.success) {
-                toast.success('Đã đóng cuộc trò chuyện')
-                fetchChats()
-                setSelectedChat(null)
-            }
-        } catch (error) {
-            console.log(error)
-            toast.error(error.message)
         }
     }
 
@@ -268,12 +247,6 @@ const ChatManagement = ({ token }) => { // ✅ Must be a component function
                                 <h2 className='text-lg font-semibold'>{selectedChat.userName}</h2>
                                 <p className='text-sm text-gray-300'>{selectedChat.userEmail}</p>
                             </div>
-                            <button
-                                onClick={() => handleCloseChat(selectedChat._id)}
-                                className='bg-red-500 px-4 py-2 rounded hover:bg-red-600'
-                            >
-                                Đóng chat
-                            </button>
                         </div>
 
                         {/* Messages */}
